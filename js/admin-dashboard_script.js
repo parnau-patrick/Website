@@ -698,40 +698,51 @@ function setupBlockDateListeners() {
     const blockDateClose = document.getElementById('blockDateClose');
     const blockDateCancel = document.getElementById('blockDateCancel');
     const blockDateConfirm = document.getElementById('blockDateConfirm');
+    
+    // Popup pentru vizualizare
     const viewBlockedDatesBtn = document.getElementById('viewBlockedDatesBtn');
+    const viewBlockedDatesPopup = document.getElementById('viewBlockedDatesPopup');
+    const viewBlockedClose = document.getElementById('viewBlockedClose');
+    const viewBlockedCancel = document.getElementById('viewBlockedCancel');
+    
     const fullDayCheckbox = document.getElementById('fullDayBlock');
     const hoursSelectionDiv = document.getElementById('hoursSelection');
 
     if (blockDateBtn) {
-        blockDateBtn.addEventListener('click', () => {
-            currentBlockDatePopupMode = 'block';
-            showBlockDatePopup();
-        });
+        blockDateBtn.addEventListener('click', showBlockDatePopup);
     }
 
     if (viewBlockedDatesBtn) {
-        viewBlockedDatesBtn.addEventListener('click', () => {
-            currentBlockDatePopupMode = 'view';
-            showBlockedDatesView();
-        });
+        viewBlockedDatesBtn.addEventListener('click', showBlockedDatesView);
     }
 
+    // Event listeners pentru popup-ul de blocare
     if (blockDateClose) {
-        blockDateClose.addEventListener('click', hideBlockDatePopup);
+        blockDateClose.addEventListener('click', () => {
+            blockDatePopup.style.display = 'none';
+        });
     }
 
     if (blockDateCancel) {
-        blockDateCancel.addEventListener('click', hideBlockDatePopup);
-    }
-
-    if (blockDatePopup) {
-        blockDatePopup.addEventListener('click', function(e) {
-            if (e.target === this) {
-                hideBlockDatePopup();
-            }
+        blockDateCancel.addEventListener('click', () => {
+            blockDatePopup.style.display = 'none';
         });
     }
 
+    // Event listeners pentru popup-ul de vizualizare
+    if (viewBlockedClose) {
+        viewBlockedClose.addEventListener('click', () => {
+            viewBlockedDatesPopup.style.display = 'none';
+        });
+    }
+
+    if (viewBlockedCancel) {
+        viewBlockedCancel.addEventListener('click', () => {
+            viewBlockedDatesPopup.style.display = 'none';
+        });
+    }
+
+    // Event listeners pentru funcționalitate
     if (fullDayCheckbox) {
         fullDayCheckbox.addEventListener('change', function() {
             if (hoursSelectionDiv) {
@@ -743,33 +754,111 @@ function setupBlockDateListeners() {
     if (blockDateConfirm) {
         blockDateConfirm.addEventListener('click', handleBlockDateConfirm);
     }
+
+    const blockDateInput = document.getElementById('blockDateInput');
+    if (blockDateInput) {
+        blockDateInput.addEventListener('change', function() {
+            // Regenerează orele când se schimbă data
+            const fullDayCheckbox = document.getElementById('fullDayBlock');
+            if (fullDayCheckbox && !fullDayCheckbox.checked) {
+                generateHourCheckboxes();
+            }
+        });
+    }
+
 }
 
 function showBlockDatePopup() {
     const blockDatePopup = document.getElementById('blockDatePopup');
+    const popupTitle = document.getElementById('blockDatePopupTitle');
+    const popupContent = document.getElementById('blockDatePopupContent');
+    
+    // Verificare că elementele există
+    if (!blockDatePopup) {
+        showToast('Eroare: Popup-ul nu a fost găsit', false);
+        return;
+    }
+    
+    // Restaurează conținutul original pentru blocarea datelor
+    if (popupTitle) {
+        popupTitle.textContent = 'Blochează Dată';
+    }
+    
+    if (popupContent) {
+        popupContent.innerHTML = `
+            <div class="form-group">
+                <label for="blockDateInput">Selectează Data:</label>
+                <input type="date" id="blockDateInput" required>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="fullDayBlock" checked>
+                <label for="fullDayBlock">Blochează toată ziua</label>
+            </div>
+            
+            <div class="hours-selection" id="hoursSelection" style="display: none;">
+                <label>Selectează orele de blocat:</label>
+                <div class="hours-container" id="hoursContainer">
+                    <!-- Orele vor fi generate dinamic -->
+                </div>
+            </div>
+        `;
+    }
+    
+    // Configurare și inițializare input pentru dată
     const blockDateInput = document.getElementById('blockDateInput');
+    if (blockDateInput) {
+        // Setează data minimă la data curentă
+        const today = new Date().toISOString().split('T')[0];
+        blockDateInput.setAttribute('min', today);
+        blockDateInput.value = today;
+        
+        // Event listener simplu - doar pentru regenerarea orelor
+        blockDateInput.addEventListener('change', function() {
+            // Regenerează orele când se schimbă data (pentru programul de sâmbătă vs săptămână)
+            const fullDayCheckbox = document.getElementById('fullDayBlock');
+            if (fullDayCheckbox && !fullDayCheckbox.checked) {
+                generateHourCheckboxes();
+            }
+        });
+    }
+    
+    // Configurare checkbox pentru "Blochează toată ziua"
     const fullDayCheckbox = document.getElementById('fullDayBlock');
     const hoursSelectionDiv = document.getElementById('hoursSelection');
     
-    if (blockDatePopup) {
-        // Resetează formularul
-        if (blockDateInput) {
-            const today = new Date().toISOString().split('T')[0];
-            blockDateInput.value = today;
-            blockDateInput.setAttribute('min', today);
-        }
+    if (fullDayCheckbox && hoursSelectionDiv) {
+        // Setare inițială
+        fullDayCheckbox.checked = true;
+        hoursSelectionDiv.style.display = 'none';
         
-        if (fullDayCheckbox) {
-            fullDayCheckbox.checked = true;
-        }
-        
-        if (hoursSelectionDiv) {
-            hoursSelectionDiv.style.display = 'none';
-            generateHourCheckboxes();
-        }
-        
-        blockDatePopup.style.display = 'flex';
+        // Event listener pentru schimbarea tipului de blocare
+        fullDayCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                // Blochează toată ziua - ascunde selecția orelor
+                hoursSelectionDiv.style.display = 'none';
+            } else {
+                // Blochează ore specifice - afișează selecția orelor
+                hoursSelectionDiv.style.display = 'block';
+                generateHourCheckboxes();
+            }
+        });
     }
+    
+    // Generează orele pentru data curentă (pentru cazul când utilizatorul debifează "toată ziua")
+    generateHourCheckboxes();
+    
+    // Afișează popup-ul
+    blockDatePopup.style.display = 'flex';
+    
+    // Îmbunătățire UX - focus pe input-ul de dată
+    setTimeout(() => {
+        if (blockDateInput) {
+            blockDateInput.focus();
+        }
+    }, 150);
+    
+    logger.info('Block date popup opened successfully');
 }
 
 function hideBlockDatePopup() {
@@ -785,15 +874,37 @@ function generateHourCheckboxes() {
     
     hoursContainer.innerHTML = '';
     
-    // Generează ore de la 10:00 la 19:00 (cu pauze de 30 min)
+    // Verifică ce zi este selectată
+    const blockDateInput = document.getElementById('blockDateInput');
+    const selectedDate = blockDateInput ? new Date(blockDateInput.value) : new Date();
+    const dayOfWeek = selectedDate.getDay(); // 0 = Duminică, 6 = Sâmbătă
+    
+    // Determină intervalul de ore bazat pe ziua săptămânii
+    let startHour, endHour;
+    
+    if (dayOfWeek === 6) { // Sâmbătă - program special 10:00-13:00
+        startHour = 10;
+        endHour = 13;
+    } else if (dayOfWeek === 0) { // Duminică - închis
+        // Nu genera ore pentru duminică
+        hoursContainer.innerHTML = '<p style="text-align: center; color: #888;">Suntem închiși duminica</p>';
+        return;
+    } else { // Luni-Vineri - program normal 10:00-19:00
+        startHour = 10;
+        endHour = 19;
+    }
+    
+    // Generează orele pentru intervalul determinat
     const hours = [];
-    for (let hour = 10; hour < 19; hour++) {
+    for (let hour = startHour; hour < endHour; hour++) {
         for (let minute = 0; minute < 60; minute += 30) {
             const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
             hours.push(timeString);
         }
     }
     
+    
+    // Creează checkbox-urile pentru ore
     hours.forEach(hour => {
         const checkboxWrapper = document.createElement('div');
         checkboxWrapper.className = 'hour-checkbox-wrapper';
@@ -815,6 +926,7 @@ async function handleBlockDateConfirm() {
     const fullDayCheckbox = document.getElementById('fullDayBlock');
     const hourCheckboxes = document.querySelectorAll('.hour-checkbox:checked');
     
+    // Verificare elemente de interfață
     if (!blockDateInput || !fullDayCheckbox) {
         showToast('Eroare în interfață', false);
         return;
@@ -823,18 +935,52 @@ async function handleBlockDateConfirm() {
     const selectedDate = blockDateInput.value;
     const isFullDay = fullDayCheckbox.checked;
     
+    // Validare dată selectată
     if (!selectedDate) {
         showToast('Te rugăm să selectezi o dată', false);
         return;
     }
     
+    // Verificare că data nu este în trecut
+    const selectedDateObj = new Date(selectedDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    selectedDateObj.setHours(0, 0, 0, 0);
+    
+    if (selectedDateObj < today) {
+        showToast('Nu se pot bloca date din trecut', false);
+        return;
+    }
+    
+    // Verificare că nu este duminică
+    const dayOfWeek = selectedDateObj.getDay(); // 0 = Duminică
+    if (dayOfWeek === 0) {
+        showToast('Nu se poate bloca duminica - suntem deja închiși în această zi!', false);
+        return;
+    }
+    
+    // Validare ore selectate (dacă nu e toată ziua)
     if (!isFullDay && hourCheckboxes.length === 0) {
         showToast('Te rugăm să selectezi cel puțin o oră', false);
         return;
     }
     
+    // Validare numărul de ore (previne atacuri)
+    if (!isFullDay && hourCheckboxes.length > 20) {
+        showToast('Prea multe ore selectate (maxim 20)', false);
+        return;
+    }
+    
     const selectedHours = Array.from(hourCheckboxes).map(cb => cb.value);
     
+    // Verificare pentru date duplicate
+    const existingBlock = checkIfDateAlreadyBlocked(selectedDate, isFullDay, selectedHours);
+    if (existingBlock.isBlocked) {
+        showToast(existingBlock.message, false);
+        return;
+    }
+    
+    // Încep procesul de blocare
     showLoading();
     try {
         const response = await fetchWithAuth(`${API_URL}/admin/blocked-dates`, {
@@ -858,10 +1004,11 @@ async function handleBlockDateConfirm() {
         
         const result = await response.json();
         
+        // Succes - închide popup și afișează mesaj
         hideBlockDatePopup();
         showToast(result.message || 'Data a fost blocată cu succes', true);
         
-        // Reîncarcă lista de date blocate pentru cache
+        // Reîncarcă cache-ul pentru date blocate
         await loadBlockedDates();
         
     } catch (error) {
@@ -893,25 +1040,21 @@ async function loadBlockedDates() {
     }
 }
 
-// Funcție pentru afișarea listei de date blocate
 async function showBlockedDatesView() {
+    const viewBlockedDatesPopup = document.getElementById('viewBlockedDatesPopup');
+    const blockedDatesContent = document.getElementById('blockedDatesContent');
+    
     showLoading();
     try {
         const blockedDates = await loadBlockedDates();
         
-        const blockDatePopup = document.getElementById('blockDatePopup');
-        const popupTitle = document.getElementById('blockDatePopupTitle');
-        const popupContent = document.getElementById('blockDatePopupContent');
-        
-        if (!blockDatePopup || !popupTitle || !popupContent) {
+        if (!viewBlockedDatesPopup || !blockedDatesContent) {
             showToast('Eroare în interfață', false);
             return;
         }
         
-        popupTitle.textContent = 'Date Blocate';
-        
         if (blockedDates.length === 0) {
-            popupContent.innerHTML = `
+            blockedDatesContent.innerHTML = `
                 <div class="no-blocked-dates">
                     <p>Nu există date blocate în prezent.</p>
                 </div>
@@ -920,7 +1063,6 @@ async function showBlockedDatesView() {
             let blockedDatesHTML = '<div class="blocked-dates-list">';
             
             blockedDates.forEach(blocked => {
-                const dateFormatted = new Date(blocked.date).toLocaleDateString('ro-RO');
                 const hoursText = blocked.isFullDayBlocked 
                     ? 'Toată ziua' 
                     : blocked.blockedHours.join(', ');
@@ -941,10 +1083,10 @@ async function showBlockedDatesView() {
             });
             
             blockedDatesHTML += '</div>';
-            popupContent.innerHTML = blockedDatesHTML;
+            blockedDatesContent.innerHTML = blockedDatesHTML;
             
             // Adaugă event listeners pentru butoanele de deblocare
-            const unblockButtons = popupContent.querySelectorAll('.unblock-date-btn');
+            const unblockButtons = blockedDatesContent.querySelectorAll('.unblock-date-btn');
             unblockButtons.forEach(button => {
                 button.addEventListener('click', async (e) => {
                     const blockedDateId = e.target.getAttribute('data-id');
@@ -955,7 +1097,7 @@ async function showBlockedDatesView() {
             });
         }
         
-        blockDatePopup.style.display = 'flex';
+        viewBlockedDatesPopup.style.display = 'flex';
         
     } catch (error) {
         logger.error('Error showing blocked dates view:', error);
@@ -967,9 +1109,6 @@ async function showBlockedDatesView() {
 
 // Funcție pentru deblocarea unei date
 async function unblockDate(blockedDateId) {
-    if (!confirm('Ești sigur că vrei să deblochezi această dată?')) {
-        return;
-    }
     
     showLoading();
     try {
@@ -1000,10 +1139,6 @@ async function unblockDate(blockedDateId) {
 
 // Funcție pentru rularea manuală a curățării
 async function runManualCleanup() {
-    if (!confirm('Ești sigur că vrei să rulezi curățarea automată? Aceasta va șterge rezervările expirate.')) {
-        return;
-    }
-    
     showLoading();
     try {
         const response = await fetchWithAuth(`${API_URL}/admin/cleanup`, {
@@ -1034,6 +1169,64 @@ async function runManualCleanup() {
         showToast(error.message || 'Nu s-a putut rula curățarea', false);
     } finally {
         hideLoading();
+    }
+}
+
+/**
+ * Verifică dacă o dată este deja blocată
+ * @param {string} selectedDate - Data selectată
+ * @param {boolean} isFullDay - Dacă se blochează toată ziua
+ * @param {Array} selectedHours - Orele selectate (dacă nu e toată ziua)
+ * @returns {Object} - Rezultatul verificării
+ */
+function checkIfDateAlreadyBlocked(selectedDate, isFullDay, selectedHours = []) {
+    try {
+        // Verifică în cache-ul local
+        const existingBlock = blockedDatesCache.find(blocked => {
+            const blockedDate = new Date(blocked.date).toISOString().split('T')[0];
+            return blockedDate === selectedDate;
+        });
+        
+        if (!existingBlock) {
+            return { isBlocked: false };
+        }
+        
+        // Verifică tipul de blocare
+        if (existingBlock.isFullDayBlocked) {
+            return {
+                isBlocked: true,
+                message: `Data ${existingBlock.dateFormatted} este deja blocată complet!`
+            };
+        }
+        
+        // Dacă există blocare parțială și vrei să blochezi toată ziua
+        if (!existingBlock.isFullDayBlocked && isFullDay) {
+            return {
+                isBlocked: true,
+                message: `Data ${existingBlock.dateFormatted} are deja ore blocate (${existingBlock.blockedHours.join(', ')}). Pentru a bloca toată ziua, mai întâi deblochează orele existente.`
+            };
+        }
+        
+        // Verifică dacă orele selectate se suprapun cu cele existente
+        if (!isFullDay && existingBlock.blockedHours) {
+            const overlappingHours = selectedHours.filter(hour => 
+                existingBlock.blockedHours.includes(hour)
+            );
+            
+            if (overlappingHours.length > 0) {
+                return {
+                    isBlocked: true,
+                    message: `Următoarele ore sunt deja blocate în ${existingBlock.dateFormatted}: ${overlappingHours.join(', ')}`
+                };
+            }
+        }
+        
+        return { isBlocked: false };
+        
+    } catch (error) {
+        logger.error('Error checking if date is already blocked:', error);
+        // În caz de eroare, permite operația să continue
+        return { isBlocked: false };
     }
 }
 

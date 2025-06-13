@@ -330,18 +330,6 @@ const isTimeSlotAvailable = async (date, time, duration) => {
       }
     }
     
-    // Verifică dacă data/ora este blocată de administrator
-    const blockCheck = await BlockedDate.isDateTimeBlocked(date, time);
-    if (blockCheck.isBlocked) {
-      return false;
-    }
-    
-    // Verifică dacă toată ziua este blocată
-    const dayBlockCheck = await BlockedDate.isDateTimeBlocked(date);
-    if (dayBlockCheck.isBlocked && dayBlockCheck.type === 'fullDay') {
-      return false;
-    }
-    
     // Limitare rezultate pentru performanță
     const overlappingBookings = await Booking.find({
       date: {
@@ -367,6 +355,19 @@ const isTimeSlotAvailable = async (date, time, duration) => {
       ) {
         return false;
       }
+    }
+    // Verifică din nou dacă data/ora a fost blocată între timp (previne race conditions)
+    const finalBlockCheck = await BlockedDate.isDateTimeBlocked(date, time);
+    if (finalBlockCheck.isBlocked) {
+      logger.info(`Time slot ${time} on ${date.toDateString()} was blocked during reservation process`);
+      return false;
+    }
+
+    // Verifică din nou dacă toată ziua a fost blocată
+    const finalDayBlockCheck = await BlockedDate.isDateTimeBlocked(date);
+    if (finalDayBlockCheck.isBlocked && finalDayBlockCheck.type === 'fullDay') {
+      logger.info(`Full day ${date.toDateString()} was blocked during reservation process`);
+      return false;
     }
     
     return true;

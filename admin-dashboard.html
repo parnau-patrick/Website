@@ -1017,38 +1017,56 @@
         </div>
     </div>
     <script src="js/admin-dashboard_script.js"></script>
-    <!-- Popup pentru blocarea datelor -->
+  <!-- Popup pentru blocarea datelor -->
 <div class="block-date-popup" id="blockDatePopup">
     <div class="block-date-popup-content">
         <button class="block-date-popup-close" id="blockDateClose">&times;</button>
         
         <div class="block-date-popup-header">
             <div class="block-date-popup-icon">📅</div>
-            <h3 id="blockDatePopupTitle">Blochează Dată</h3>
+            <h3>Blochează Dată</h3>
         </div>
         
-        <div id="blockDatePopupContent">
-            <div class="form-group">
-                <label for="blockDateInput">Selectează Data:</label>
-                <input type="date" id="blockDateInput" required>
-            </div>
-            
-            <div class="checkbox-group">
-                <input type="checkbox" id="fullDayBlock" checked>
-                <label for="fullDayBlock">Blochează toată ziua</label>
-            </div>
-            
-            <div class="hours-selection" id="hoursSelection" style="display: none;">
-                <label>Selectează orele de blocat:</label>
-                <div class="hours-container" id="hoursContainer">
-                    <!-- Orele vor fi generate dinamic -->
-                </div>
+        <div class="form-group">
+            <label for="blockDateInput">Selectează Data:</label>
+            <input type="date" id="blockDateInput" required>
+        </div>
+        
+        <div class="checkbox-group">
+            <input type="checkbox" id="fullDayBlock" checked>
+            <label for="fullDayBlock">Blochează toată ziua</label>
+        </div>
+        
+        <div class="hours-selection" id="hoursSelection" style="display: none;">
+            <label>Selectează orele de blocat:</label>
+            <div class="hours-container" id="hoursContainer">
+                <!-- Orele vor fi generate dinamic -->
             </div>
         </div>
         
         <div class="block-date-popup-actions">
             <button class="popup-btn popup-btn-cancel" id="blockDateCancel">Anulează</button>
             <button class="popup-btn popup-btn-confirm" id="blockDateConfirm">Confirmă Blocarea</button>
+        </div>
+    </div>
+</div>
+
+<!-- Popup pentru vizualizarea datelor blocate -->
+<div class="block-date-popup" id="viewBlockedDatesPopup">
+    <div class="block-date-popup-content">
+        <button class="block-date-popup-close" id="viewBlockedClose">&times;</button>
+        
+        <div class="block-date-popup-header">
+            <div class="block-date-popup-icon">👁️</div>
+            <h3>Date Blocate</h3>
+        </div>
+        
+        <div id="blockedDatesContent">
+            <!-- Conținutul va fi populat dinamic -->
+        </div>
+        
+        <div class="block-date-popup-actions">
+            <button class="popup-btn popup-btn-cancel" id="viewBlockedCancel">Închide</button>
         </div>
     </div>
 </div>

@@ -107,7 +107,6 @@ blockedDateSchema.pre('save', function(next) {
 });
 
 // Index-uri pentru căutări rapide și performanță
-blockedDateSchema.index({ date: 1 });
 blockedDateSchema.index({ date: 1, isFullDayBlocked: 1 });
 blockedDateSchema.index({ createdBy: 1 });
 blockedDateSchema.index({ createdAt: -1 });

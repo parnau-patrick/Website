@@ -269,19 +269,12 @@ const getAvailableTimeSlots = async (req, res) => {
       });
     }
     
-    // Mesaj special pentru sâmbătă
-    let additionalMessage = '';
-    if (dayOfWeek === 6) {
-      additionalMessage = 'Program special sâmbătă: 10:00-13:00';
-    }
-    
     res.status(200).json({ 
       success: true, 
       timeSlots,
       serviceName: service.name,
       serviceDuration: service.duration,
       servicePrice: service.price,
-      message: additionalMessage
     });
   } catch (error) {
     logger.error('Error fetching available time slots:', error);

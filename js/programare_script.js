@@ -311,24 +311,10 @@ dataProgramare.addEventListener('change', async function() {
         // Continuă normal dacă verificarea eșuează
     }
     
-    // Data este OK
+    // Data este OK - ascunde orice mesaje și permite continuarea
     sundayMessage.style.display = 'none';
     btnStep1.disabled = false;
     btnStep1.style.opacity = '1';
-    
-    // Afișează mesaj special pentru sâmbătă
-    if (dayOfWeek === 6) {
-        sundayMessage.innerHTML = `
-            <h3 style="color: #2196F3;">ℹ Program Special Sâmbătă</h3>
-            <p>Sâmbăta programul nostru este de la <strong>10:00 la 13:00</strong>.</p>
-            <p>Pentru mai multe opțiuni de ore, te rugăm să alegi o zi din timpul săptămânii (Luni-Vineri: 10:00-19:00).</p>
-        `;
-        sundayMessage.style.backgroundColor = '#1a3d5c';
-        sundayMessage.style.borderLeftColor = '#2196F3';
-        sundayMessage.style.display = 'block';
-        btnStep1.disabled = false;
-        btnStep1.style.opacity = '1';
-    }
 });
 
 
@@ -424,19 +410,11 @@ async function incarcaOreDisponibile() {
         const data = await response.json();
         logger.info('Răspuns de la server:', data);
         
-        if (data.success && data.timeSlots && data.timeSlots.length > 0) {
+       if (data.success && data.timeSlots && data.timeSlots.length > 0) {
             // Șterge orele existente
             oreDisponibile.innerHTML = '';
             
-            // Afișează mesaj special pentru sâmbătă dacă există
-            if (data.message) {
-                const messageDiv = document.createElement('div');
-                messageDiv.style.cssText = 'color: #ffb74d; text-align: center; margin-bottom: 15px; font-weight: bold; background-color: rgba(255, 183, 77, 0.1); padding: 10px; border-radius: 4px; border-left: 4px solid #ffb74d;';
-                messageDiv.textContent = data.message;
-                oreDisponibile.appendChild(messageDiv);
-            }
             
-            // Generează orele din răspunsul serverului
             data.timeSlots.forEach(slot => {
                 const safeSlot = sanitizeInput(slot);
                 const label = document.createElement('label');
@@ -446,8 +424,7 @@ async function incarcaOreDisponibile() {
                 `;
                 oreDisponibile.appendChild(label);
             });
-            
-            logger.info(`S-au încărcat ${data.timeSlots.length} ore disponibile`);
+        logger.info(`S-au încărcat ${data.timeSlots.length} ore disponibile`);
         } else {
             // Afișează mesajul personalizat de la server
             const message = data.message || 'Nu există ore disponibile pentru data selectată.';
@@ -517,6 +494,7 @@ btnStep1.addEventListener('click', async function () {
 });
 
 // Pasul 2 -> Pasul 3
+// Pasul 2 -> Pasul 3
 btnStep2.addEventListener('click', async function () {
     const oreInputs = document.querySelectorAll('#oreDisponibile input[name="ora"]');
     let oraSelectata = null;
@@ -542,7 +520,7 @@ btnStep2.addEventListener('click', async function () {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest' // Protecție CSRF suplimentară
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: JSON.stringify({
                 serviceId: parseInt(selectedServiceId),
@@ -555,18 +533,57 @@ btnStep2.addEventListener('click', async function () {
         logger.info('Răspuns rezervare inițială:', data);
         
         if (data.success) {
-            // Tranziție la pasul 3
+            // TOTUL OK - Merge la pasul 3 fără refresh
             step2.classList.remove('active');
             step3.classList.add('active');
         } else {
-            showNotification(data.message || 'Eroare la rezervarea orei', 'error');
+            // EROARE - Ora nu mai e disponibilă (admin a blocat SAU alt client a rezervat)
+            
+            // Detectează tipul de eroare pentru mesaje personalizate
+            let errorMessage = data.message || 'Ora selectată nu mai este disponibilă';
+            let errorType = 'error';
+            
+            if (data.message) {
+                if (data.message.includes('blocat') || data.message.includes('închis') || data.message.includes('indisponibil')) {
+                    // Adminul a blocat ora
+                    errorMessage = `${data.message} Te rugăm să selectezi altă oră.`;
+                    errorType = 'warning';
+                    logger.info('🔒 Admin a blocat ora - refreshez...');
+                } else if (data.message.includes('nu mai este disponibil') || data.message.includes('rezervat')) {
+                    // Alt client a rezervat ora
+                    errorMessage = `Ora ${selectedTime} a fost rezervată de alt client în același timp. Te rugăm să selectezi altă oră.`;
+                    errorType = 'info';
+                    logger.info('👥 Alt client a rezervat ora - refreshez...');
+                } else {
+                    // Alte erori
+                    logger.info('⚠️ Eroare necunoscută - refreshez...');
+                }
+            }
+            
+            showNotification(errorMessage, errorType);
+            
+            //  REFRESHEAZĂ orele în toate cazurile de eroare
+            logger.info('🔄 Refreshez orele din cauza conflictului...');
+            await incarcaOreDisponibile();
         }
     } catch (error) {
         logger.error('Eroare la pasul 2:', error);
-        showNotification('A apărut o eroare la rezervarea orei. Te rugăm să încerci din nou.', 'error');
+        
+        // Determină tipul de eroare pentru mesaj personalizat
+        let networkErrorMessage = 'A apărut o eroare la rezervarea orei.';
+        if (error.message.includes('fetch')) {
+            networkErrorMessage = 'Probleme de conexiune. Verifică internetul și încearcă din nou.';
+        } else if (error.message.includes('timeout')) {
+            networkErrorMessage = 'Cererea a expirat. Te rugăm să încerci din nou.';
+        }
+        
+        showNotification(networkErrorMessage, 'error');
+        
+        //  REFRESHEAZĂ orele și în caz de eroare de rețea
+        logger.info('🔄 Refreshez orele din cauza erorii de rețea...');
+        await incarcaOreDisponibile();
     }
 });
-
 // Pasul 3 -> Verificare prin Email
 btnStep3.addEventListener('click', async function () {
     numeComplet = numeCompletInput.value.trim();
