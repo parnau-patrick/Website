@@ -1,8 +1,9 @@
 // controllers/bookingController.js
-const { Service, Booking, EmailUsage, isTimeSlotAvailable } = require('../models/Booking');
+const { Service, Booking, EmailUsage, generateAvailableTimeSlots } = require('../models/Booking');
 const Client = require('../models/Client');
 const BlockedDate = require('../models/BlockedDates');
 const { runFullCleanup } = require('../utils/autoCleanup');
+const TimeLock = require('../models/TimeLock');
 const { 
   sendVerificationEmail, 
   sendBookingConfirmationEmail, 
@@ -21,18 +22,8 @@ const MAX_BOOKING_DAYS_AHEAD = parseInt(process.env.MAX_BOOKING_DAYS_AHEAD) || 3
 const VERIFICATION_CODE_LENGTH = parseInt(process.env.VERIFICATION_CODE_LENGTH) || 6;
 const BOOKING_SESSION_TIMEOUT_MINS = parseInt(process.env.BOOKING_SESSION_TIMEOUT_MINS) || 15;
 
-// Configurare logging condiționat de mediu
-const logger = {
-  info: NODE_ENV === 'production' ? () => {} : console.log,
-  warn: console.warn,
-  error: (message, error) => {
-    if (NODE_ENV === 'production') {
-      console.error(message, error instanceof Error ? error.message : error);
-    } else {
-      console.error(message, error);
-    }
-  }
-};
+const { createContextLogger } = require('../utils/logger');
+const logger = createContextLogger('BOOKING-CONTROLLER');
 
 /**
  * Cache memory pentru servicii pentru a evita interogări repetate
@@ -173,32 +164,34 @@ const getAvailableTimeSlots = async (req, res) => {
   try {
     const { date, serviceId } = req.body;
     
+    logger.info(`[TIME-SLOTS] Cerere pentru ore disponibile: data=${date}, serviceId=${serviceId}`);
+    
     // Rulează auto-cleanup înainte de a genera orele
     await runFullCleanup();
     
-    // Validation is now handled by middleware
+    // Validation is handled by middleware
     const selectedDate = new Date(date);
+    const now = new Date();
     
-    // Get service duration
-    let service;
-    
-    // Try to get from cache first
-    service = await serviceCache.getService(parseInt(serviceId));
-    
-    // Fallback to database if not in cache
+    // Obține serviciul
+    let service = await serviceCache.getService(parseInt(serviceId));
     if (!service) {
       service = await Service.findById(parseInt(serviceId));
     }
     
     if (!service) {
+      logger.error(`[TIME-SLOTS] Serviciul ${serviceId} nu a fost găsit`);
       return errorResponse(res, 404, 'Serviciul nu a fost găsit. Vă rugăm să alegeți un serviciu valid.');
     }
     
-    const { duration } = service;
+    logger.info(`[TIME-SLOTS] Serviciu găsit: ${service.name} (${service.duration} min, ${service.price} RON)`);
     
-    // Verifică dacă este duminică
-    const dayOfWeek = selectedDate.getDay();
+    // Verifică ziua săptămânii
+    const dayOfWeek = selectedDate.getDay(); // 0=Duminică, 1=Luni, 6=Sâmbătă
+    
+    // Duminica este închis
     if (dayOfWeek === 0) {
+      logger.info(`[TIME-SLOTS] Duminică - închis`);
       return res.status(200).json({ 
         success: true, 
         timeSlots: [],
@@ -206,10 +199,10 @@ const getAvailableTimeSlots = async (req, res) => {
       });
     }
     
-    // Verifică dacă data este blocată complet
+    // Verifică dacă data este blocată complet de admin
     const dayBlockCheck = await BlockedDate.isDateTimeBlocked(selectedDate);
     if (dayBlockCheck.isBlocked && dayBlockCheck.type === 'fullDay') {
-      const dayName = BlockedDate.formatDateInRomanian(selectedDate);
+      logger.info(`[TIME-SLOTS] Data ${selectedDate.toISOString().split('T')[0]} este blocată complet: ${dayBlockCheck.reason}`);
       return res.status(200).json({ 
         success: true, 
         timeSlots: [],
@@ -217,76 +210,112 @@ const getAvailableTimeSlots = async (req, res) => {
       });
     }
     
-    // Generate all possible time slots cu programul actualizat
-    const timeSlots = [];
-    let startHour, endHour;
+    // Determină dacă data selectată este astăzi
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDateOnly = new Date(selectedDate);
+    selectedDateOnly.setHours(0, 0, 0, 0);
+    const isToday = selectedDateOnly.getTime() === today.getTime();
     
-    if (dayOfWeek === 6) { // Sâmbătă - program special 10:00-13:00
+    logger.info(`[TIME-SLOTS] Data selectată: ${selectedDate.toISOString().split('T')[0]}, este astăzi: ${isToday}`);
+    if (isToday) {
+      logger.info(`[TIME-SLOTS] Ora curentă: ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`);
+    }
+    
+    // Determină programul de lucru bazat pe ziua săptămânii
+    let startHour, endHour, scheduleInfo;
+    
+    if (dayOfWeek === 6) { 
+      // Sâmbătă - program special 10:00-13:00
       startHour = 10;
       endHour = 13;
-    } else { // Luni-Vineri - program normal 10:00-19:00
+      scheduleInfo = 'Sâmbătă (10:00-13:00)';
+    } else { 
+      // Luni-Vineri - program normal 10:00-19:00
       startHour = 10;
       endHour = 19;
+      scheduleInfo = 'Luni-Vineri (10:00-19:00)';
     }
     
-    // Generate slots every 30 minutes
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        // Format time string with leading zeros
-        const startTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        
-        // Skip slots that would extend beyond closing time
-        const startTimeInMinutes = hour * 60 + minute;
-        const endTimeInMinutes = startTimeInMinutes + duration;
-        
-        if (endTimeInMinutes > endHour * 60) {
-          continue;
-        }
-        
-        // Check if the time slot is available
-        const available = await isTimeSlotAvailable(selectedDate, startTime, duration);
-        
-        if (available) {
-          timeSlots.push(startTime);
-        }
-      }
-    }
+    logger.info(`[TIME-SLOTS] Program de lucru: ${scheduleInfo}`);
     
-    if (timeSlots.length === 0) {
+   
+    const availableSlots = await generateAvailableTimeSlots(selectedDate, service.duration);
+    
+    
+    const filteredSlots = isToday ? 
+      availableSlots.filter(timeSlot => {
+        const [hours, minutes] = timeSlot.split(':').map(Number);
+        const slotDateTime = new Date(selectedDate);
+        slotDateTime.setHours(hours, minutes, 0, 0);
+        return slotDateTime > now;
+      }) : 
+      availableSlots;
+    
+    logger.info(`[TIME-SLOTS] Rezultat optimizat: ${filteredSlots.length} slot-uri disponibile din ${availableSlots.length} generate`);
+    
+    // Gestionează cazul când nu există slot-uri disponibile
+    if (filteredSlots.length === 0) {
       let message = 'Nu există intervale orare disponibile pentru data selectată.';
       
-      // Verifică dacă sunt ore blocate specific
+      // Mesaj personalizat pentru astăzi
+      if (isToday) {
+        const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        message = `Nu mai există intervale orare disponibile pentru astăzi (ora curentă: ${currentTime}). Te rugăm să selectezi o altă dată.`;
+      }
+      
+      // Verifică dacă sunt ore blocate specific de admin
       const blockedInfo = await BlockedDate.getBlockedHours(selectedDate);
       if (blockedInfo.blockedHours && blockedInfo.blockedHours.length > 0) {
-        const dayName = BlockedDate.formatDateInRomanian(selectedDate);
         message = `${blockedInfo.reason}. Te rugăm să selectezi o altă dată.`;
       }
+      
+      logger.info(`[TIME-SLOTS] Nu există slot-uri disponibile: ${message}`);
       
       return res.status(200).json({ 
         success: true, 
         timeSlots: [],
-        message: message + ' Vă rugăm să alegeți o altă dată.'
+        message: message
       });
     }
     
-    res.status(200).json({ 
+    // Returnează slot-urile disponibile
+    const response = {
       success: true, 
-      timeSlots,
+      timeSlots: filteredSlots,
       serviceName: service.name,
       serviceDuration: service.duration,
       servicePrice: service.price,
-    });
+      selectedDate: selectedDate.toISOString().split('T')[0],
+      isToday: isToday,
+      schedule: scheduleInfo
+    };
+    
+    // Adaugă informații suplimentare pentru debugging (doar în development)
+    if (process.env.NODE_ENV === 'development') {
+      response.debug = {
+        currentTime: now.toTimeString().substring(0, 8),
+        totalGeneratedSlots: availableSlots.length,
+        availableSlotsAfterTimeFilter: filteredSlots.length,
+        dayOfWeek: dayOfWeek,
+        cacheUsed: true
+      };
+    }
+    
+    logger.info(`[TIME-SLOTS] Răspuns optimizat trimis cu ${filteredSlots.length} slot-uri: ${filteredSlots.join(', ')}`);
+    
+    res.status(200).json(response);
+    
   } catch (error) {
-    logger.error('Error fetching available time slots:', error);
+    logger.error('[TIME-SLOTS] Eroare la obținerea orelor disponibile:', error);
     return errorResponse(res, 500, 'Eroare la obținerea intervalelor orare disponibile');
   }
 };
 
+
 const createBooking = async (req, res) => {
   try {
     const { serviceId, date, time } = req.body;
-    
-    // Validation is now handled by middleware
     
     // Validate service exists
     let service;
@@ -305,7 +334,8 @@ const createBooking = async (req, res) => {
     
     // Check if the selected time slot is available
     const selectedDate = new Date(date);
-    const isAvailable = await isTimeSlotAvailable(selectedDate, time, service.duration);
+    const availableSlots = await generateAvailableTimeSlots(selectedDate, service.duration);
+    const isAvailable = availableSlots.includes(time);
     
     if (!isAvailable) {
       // Verifică dacă data este blocată pentru un mesaj personalizat
@@ -314,10 +344,29 @@ const createBooking = async (req, res) => {
         return errorResponse(res, 400, `${blockCheck.reason}. Te rugăm să selectezi altă dată sau oră.`);
       }
       
-      return errorResponse(res, 400, 'Intervalul orar selectat nu mai este disponibil. Te rugăm să apeși butonul "Înapoi" pentru a vedea orele actualizate și să alegi alt interval.');
+      return errorResponse(res, 400, `Intervalul orar ${time} a fost rezervat de un alt client în același timp. Te rugăm să selectezi o altă oră.`);
     }
     
-    // Store booking information in session to be completed later
+    // Încearcă să creezi lock-ul atomic pentru a preveni race conditions
+    try {
+      const timeLock = new TimeLock({
+        date: selectedDate,
+        time: time,
+        serviceId: parseInt(serviceId),
+        lockedBy: req.sessionID 
+      });
+      
+      await timeLock.save(); // Dacă altcineva are deja lock, va da eroare
+      
+    } catch (lockError) {
+      if (lockError.code === 11000) { // Duplicate key error
+        return errorResponse(res, 400, `Intervalul orar ${time} a fost rezervat de un alt client în același timp. Te rugăm să selectezi o altă oră.`);
+      }
+      throw lockError;
+    }
+    
+    // Dacă ajunge aici, lock-ul a fost creat cu succes
+    // Store booking information in session to be od later
     if (req.session) {
       req.session.bookingData = {
         serviceId: parseInt(serviceId),
@@ -417,11 +466,8 @@ const resendVerificationCode = async (req, res) => {
   }
 };
 
-/**
- * Complete booking with client information (Step 3)
- * @param {Object} req - Request object
- * @param {Object} res - Response object
- */
+
+
 const completeBooking = async (req, res) => {
   try {
     const { clientName, phoneNumber, email, countryCode, serviceId, date, time } = req.body;
@@ -493,12 +539,6 @@ const completeBooking = async (req, res) => {
       return errorResponse(res, 404, 'Serviciul nu a fost găsit');
     }
     
-    // Check if the time slot is still available
-    const isAvailable = await isTimeSlotAvailable(bookingDate, bookingTime, service.duration);
-    if (!isAvailable) {
-      return errorResponse(res, 400, 'Intervalul orar nu mai este disponibil. Vă rugăm să alegeți alt interval.');
-    }
-    
     // Rate limiting check to prevent spam
     const rateLimitKey = `book_${email}_${Date.now().toString().slice(0, 10)}`;
     if (!rateLimit.check(rateLimitKey, 5, 30 * 60 * 1000)) { // 5 attempts per 30 minutes
@@ -549,8 +589,6 @@ const completeBooking = async (req, res) => {
     // Generate verification code
     const verificationCode = generateVerificationCode();
     
-    
-    
     // Create booking in pending state with client reference
     const booking = new Booking({
       client: client._id,
@@ -570,6 +608,19 @@ const completeBooking = async (req, res) => {
    
     // Save booking to get an ID
     await booking.save();
+    
+    // Șterge lock-ul pentru că rezervarea a fost finalizată
+    try {
+      await TimeLock.deleteOne({
+        date: bookingDate,
+        time: bookingTime,
+        serviceId: bookingServiceId,
+        lockedBy: req.sessionID
+      });
+    } catch (lockDeleteError) {
+      logger.warn('Could not delete time lock:', lockDeleteError);
+      // Nu oprește procesul dacă ștergerea lock-ului eșuează
+    }
     
     // Update client's total bookings
     client.totalBookings += 1;
@@ -1421,11 +1472,8 @@ const getAllClients = async (req, res) => {
  }
 };
 
-/**
- * Suspend booking when user closes verification popup
- * @param {Object} req - Request object
- * @param {Object} res - Response object
- */
+
+
 const suspendBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
@@ -1439,6 +1487,18 @@ const suspendBooking = async (req, res) => {
     // Verifică dacă rezervarea nu este deja confirmată
     if (booking.status === 'confirmed') {
       return errorResponse(res, 400, 'Nu se poate suspenda o rezervare confirmată');
+    }
+    
+    // Șterge lock-ul asociat dacă există
+    try {
+      await TimeLock.deleteOne({
+        date: booking.date,
+        time: booking.time,
+        serviceId: booking.service,
+        lockedBy: req.sessionID
+      });
+    } catch (lockDeleteError) {
+      logger.warn('Could not delete time lock during suspension:', lockDeleteError);
     }
     
     // Marchează rezervarea ca suspendată/anulată

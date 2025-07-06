@@ -5,18 +5,9 @@ const Client = require('../models/Client');
 const mongoose = require('mongoose');
 
 // Sistem de logging îmbunătățit
-const NODE_ENV = process.env.NODE_ENV;
-const logger = {
-  info: NODE_ENV === 'production' ? () => {} : console.log,
-  warn: console.warn,
-  error: (message, error) => {
-    if (NODE_ENV === 'production') {
-      console.error(message, error instanceof Error ? error.message : error);
-    } else {
-      console.error(message, error);
-    }
-  }
-};
+
+const { createContextLogger } = require('../utils/logger');
+const logger = createContextLogger('VALIDATION');
 
 /**
  * Middleware pentru validarea datelor de rezervare
@@ -46,6 +37,14 @@ const validateBookingData = (req, res, next) => {
     return res.status(400).json({
       success: false,
       message: 'Format timp invalid. Folosiți formatul HH:MM.'
+    });
+  }
+
+  const [hours, minutes] = time.split(':').map(Number);
+  if (minutes !== 0 && minutes !== 30) {
+    return res.status(400).json({
+      success: false,
+      message: 'Ora trebuie să fie un slot valid (format HH:00 sau HH:30). Exemplu: 13:00, 13:30, 14:00.'
     });
   }
   
@@ -108,7 +107,7 @@ const validateTimeSlotRequest = (req, res, next) => {
   }
   
   // Verifică dacă ziua selectată se încadrează în orarul de lucru (Luni-Sâmbătă)
-  const dayOfWeek = selectedDate.getDay(); // 0 = Duminică, 1 = Luni, ...
+  const dayOfWeek = selectedDate.getDay(); 
   if (dayOfWeek === 0) {
     return res.status(400).json({
       success: false,

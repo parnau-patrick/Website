@@ -1,0 +1,613 @@
+2025-06-17 15:31:57 [[31M[31MERROR[31M[39M]: [31m[31m[EMAIL] Eșec la inițializarea transporterului email:[31m[39m
+Stack: TypeError: nodemailer.createTransporter is not a function
+    at Object.<anonymous> (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\config\email.js:61:32)
+    at Module._compile (node:internal/modules/cjs/loader:1554:14)
+    at Object..js (node:internal/modules/cjs/loader:1706:10)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+    at Module.require (node:internal/modules/cjs/loader:1311:12)
+    at require (node:internal/modules/helpers:136:16)
+    at Object.<anonymous> (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\utils\autoCleanup.js:4:39)
+Meta: {
+  "error": "nodemailer.createTransporter is not a function"
+}
+2025-06-17 15:31:57 [[33M[33MWARN[33M[39M]: [33m[33m[EMAIL] Se folosește un transporter email simulat pentru dezvoltare[33m[39m
+2025-06-17 15:31:57 [[32M[32MINFO[32M[39M]: [32m[32m[BOOKING-MODEL] Connecting to MongoDB in development mode: mongodb+srv://***:***@website.l1amkmx.mongodb.net/?retryWrites=true&w=majority&appName=Website[32m[39m
+2025-06-17 15:31:57 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Server running in development mode on port 5000[32m[39m
+2025-06-17 15:31:57 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Development server accessible at http://localhost:5000[32m[39m
+2025-06-17 15:31:57 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Health check available at http://localhost:5000/health[32m[39m
+2025-06-17 15:31:57 [[32M[32MINFO[32M[39M]: [32m[32m[BOOKING-MODEL] Connected to MongoDB in development mode[32m[39m
+2025-06-17 15:31:58 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea automată...[32m[39m
+2025-06-17 15:31:58 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea rezervărilor expirate... Ora curentă: 2025-06-17T12:31:58.391Z[32m[39m
+2025-06-17 15:31:58 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Auto-cleanup job started - runs every 6 hours[32m[39m
+2025-06-17 15:31:58 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Successfully connected to MongoDB[32m[39m
+2025-06-17 15:31:58 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Găsite 0 rezervări pending verificate pentru verificare[32m[39m
+2025-06-17 15:31:58 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există rezervări pending verificate[32m[39m
+2025-06-17 15:31:58 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există rezervări neconfirmate vechi de curățat[32m[39m
+2025-06-17 15:31:58 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există rezervări respinse vechi de curățat[32m[39m
+2025-06-17 15:31:58 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea datelor blocate expirate...[32m[39m
+2025-06-17 15:31:58 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există date blocate expirate de curățat[32m[39m
+2025-06-17 15:31:58 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Curățare completă finalizată - Total curățate: 0, Total erori: 0[32m[39m
+2025-06-17 15:33:07 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Received SIGINT. Starting graceful shutdown...[32m[39m
+2025-06-17 15:33:08 [[32M[32MINFO[32M[39M]: [32m[32m[EMAIL] Transporter email inițializat pentru dezvoltare cu credențiale reale[32m[39m
+2025-06-17 15:33:08 [[32M[32MINFO[32M[39M]: [32m[32m[BOOKING-MODEL] Connecting to MongoDB in development mode: mongodb+srv://***:***@website.l1amkmx.mongodb.net/?retryWrites=true&w=majority&appName=Website[32m[39m
+2025-06-17 15:33:08 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Server running in development mode on port 5000[32m[39m
+2025-06-17 15:33:08 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Development server accessible at http://localhost:5000[32m[39m
+2025-06-17 15:33:08 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Health check available at http://localhost:5000/health[32m[39m
+2025-06-17 15:33:09 [[32M[32MINFO[32M[39M]: [32m[32m[BOOKING-MODEL] Connected to MongoDB in development mode[32m[39m
+2025-06-17 15:33:10 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea automată...[32m[39m
+2025-06-17 15:33:10 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea rezervărilor expirate... Ora curentă: 2025-06-17T12:33:10.124Z[32m[39m
+2025-06-17 15:33:10 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Auto-cleanup job started - runs every 6 hours[32m[39m
+2025-06-17 15:33:10 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Successfully connected to MongoDB[32m[39m
+2025-06-17 15:33:10 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Găsite 0 rezervări pending verificate pentru verificare[32m[39m
+2025-06-17 15:33:10 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există rezervări pending verificate[32m[39m
+2025-06-17 15:33:10 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există rezervări neconfirmate vechi de curățat[32m[39m
+2025-06-17 15:33:10 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există rezervări respinse vechi de curățat[32m[39m
+2025-06-17 15:33:10 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea datelor blocate expirate...[32m[39m
+2025-06-17 15:33:10 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există date blocate expirate de curățat[32m[39m
+2025-06-17 15:33:10 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Curățare completă finalizată - Total curățate: 0, Total erori: 0[32m[39m
+2025-06-17 15:33:21 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Received SIGINT. Starting graceful shutdown...[32m[39m
+2025-06-18 10:41:52 [[32M[32MINFO[32M[39M]: [32m[32m[EMAIL] Transporter email inițializat pentru dezvoltare cu credențiale reale[32m[39m
+2025-06-18 10:41:52 [[32M[32MINFO[32M[39M]: [32m[32m[BOOKING-MODEL] Connecting to MongoDB in development mode: mongodb+srv://***:***@website.l1amkmx.mongodb.net/?retryWrites=true&w=majority&appName=Website[32m[39m
+2025-06-18 10:41:52 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Server running in development mode on port 5000[32m[39m
+2025-06-18 10:41:52 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Development server accessible at http://localhost:5000[32m[39m
+2025-06-18 10:41:52 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Health check available at http://localhost:5000/health[32m[39m
+2025-06-18 10:41:53 [[32M[32MINFO[32M[39M]: [32m[32m[BOOKING-MODEL] Connected to MongoDB in development mode[32m[39m
+2025-06-18 10:41:53 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea automată...[32m[39m
+2025-06-18 10:41:53 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea rezervărilor expirate... Ora curentă: 2025-06-18T07:41:53.869Z[32m[39m
+2025-06-18 10:41:53 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Auto-cleanup job started - runs every 6 hours[32m[39m
+2025-06-18 10:41:53 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Successfully connected to MongoDB[32m[39m
+2025-06-18 10:41:53 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Găsite 0 rezervări pending verificate pentru verificare[32m[39m
+2025-06-18 10:41:53 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există rezervări pending verificate[32m[39m
+2025-06-18 10:41:53 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există rezervări neconfirmate vechi de curățat[32m[39m
+2025-06-18 10:41:54 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există rezervări respinse vechi de curățat[32m[39m
+2025-06-18 10:41:54 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea datelor blocate expirate...[32m[39m
+2025-06-18 10:41:54 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există date blocate expirate de curățat[32m[39m
+2025-06-18 10:41:54 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Curățare completă finalizată - Total curățate: 0, Total erori: 0[32m[39m
+2025-06-18 10:43:37 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Received SIGINT. Starting graceful shutdown...[32m[39m
+2025-06-19 14:17:09 [[32M[32MINFO[32M[39M]: [32m[32m[EMAIL] Transporter email inițializat pentru dezvoltare cu credențiale reale[32m[39m
+2025-06-19 14:17:09 [[32M[32MINFO[32M[39M]: [32m[32m[BOOKING-MODEL] Connecting to MongoDB in development mode: mongodb+srv://***:***@website.l1amkmx.mongodb.net/?retryWrites=true&w=majority&appName=Website[32m[39m
+2025-06-19 14:17:09 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Server running in development mode on port 5000[32m[39m
+2025-06-19 14:17:09 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Development server accessible at http://localhost:5000[32m[39m
+2025-06-19 14:17:09 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Health check available at http://localhost:5000/health[32m[39m
+2025-06-19 14:17:19 [[31M[31MERROR[31M[39M]: [31m[31m[BOOKING-MODEL] MongoDB connection error:[31m[39m
+Stack: MongooseServerSelectionError: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/
+    at _handleConnectionErrors (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongoose\lib\connection.js:1165:11)
+    at NativeConnection.openUri (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongoose\lib\connection.js:1096:11)
+    at async connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\models\Booking.js:753:5)
+Meta: {
+  "error": "Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/"
+}
+2025-06-19 14:17:19 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea automată...[32m[39m
+2025-06-19 14:17:19 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea rezervărilor expirate... Ora curentă: 2025-06-19T11:17:19.436Z[32m[39m
+2025-06-19 14:17:19 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Auto-cleanup job started - runs every 6 hours[32m[39m
+2025-06-19 14:17:19 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Successfully connected to MongoDB[32m[39m
+2025-06-19 14:17:29 [[31M[31MERROR[31M[39M]: [31m[31m[AUTH] Error creating default admin:[31m[39m
+Stack: MongooseError: Operation `users.countDocuments()` buffering timed out after 10000ms
+    at Timeout.<anonymous> (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongoose\lib\drivers\node-mongodb-native\collection.js:187:23)
+    at listOnTimeout (node:internal/timers:594:17)
+    at process.processTimers (node:internal/timers:529:7)
+Meta: {
+  "error": "Operation `users.countDocuments()` buffering timed out after 10000ms"
+}
+2025-06-19 14:17:29 [[31M[31MERROR[31M[39M]: [31m[31m[AUTO-CLEANUP] Auto-cleanup: EROARE GENERALĂ la curățarea rezervărilor expirate:[31m[39m
+Stack: MongooseError: Operation `bookings.find()` buffering timed out after 10000ms
+    at Timeout.<anonymous> (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongoose\lib\drivers\node-mongodb-native\collection.js:187:23)
+    at listOnTimeout (node:internal/timers:594:17)
+    at process.processTimers (node:internal/timers:529:7)
+Meta: {
+  "error": "Operation `bookings.find()` buffering timed out after 10000ms"
+}
+2025-06-19 14:17:39 [[31M[31MERROR[31M[39M]: [31m[31munhandledRejection: 38100000:error:0A000438:SSL routines:ssl3_read_bytes:tlsv1 alert internal error:c:\ws\deps\openssl\openssl\ssl\record\rec_layer_s3.c:1605:SSL alert number 80[31m[39m
+
+[31m[31mMongoServerSelectionError: 38100000:error:0A000438:SSL routines:ssl3_read_bytes:tlsv1 alert internal error:c:\ws\deps\openssl\openssl\ssl\record\rec_layer_s3.c:1605:SSL alert number 80[31m[39m
+
+[31m[31m    at Topology.selectServer (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\sdam\topology.js:326:38)[31m[39m
+[31m[31m    at async Topology._connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\sdam\topology.js:200:28)[31m[39m
+[31m[31m    at async Topology.connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\sdam\topology.js:152:13)[31m[39m
+[31m[31m    at async topologyConnect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:246:17)[31m[39m
+[31m[31m    at async MongoClient._connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:259:13)[31m[39m
+[31m[31m    at async MongoClient.connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:184:13)[31m[39m
+[31m[31m    at async MongoClient.connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:406:16)[31m[39m
+Stack: MongoServerSelectionError: 38100000:error:0A000438:SSL routines:ssl3_read_bytes:tlsv1 alert internal error:c:\ws\deps\openssl\openssl\ssl\record\rec_layer_s3.c:1605:SSL alert number 80
+
+    at Topology.selectServer (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\sdam\topology.js:326:38)
+    at async Topology._connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\sdam\topology.js:200:28)
+    at async Topology.connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\sdam\topology.js:152:13)
+    at async topologyConnect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:246:17)
+    at async MongoClient._connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:259:13)
+    at async MongoClient.connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:184:13)
+    at async MongoClient.connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:406:16)
+Meta: {
+  "error": {
+    "errorLabelSet": {},
+    "reason": {
+      "type": "ReplicaSetNoPrimary",
+      "servers": {
+        "ac-ykadtfx-shard-00-02.l1amkmx.mongodb.net:27017": {
+          "address": "ac-ykadtfx-shard-00-02.l1amkmx.mongodb.net:27017",
+          "type": "Unknown",
+          "hosts": [],
+          "passives": [],
+          "arbiters": [],
+          "tags": {},
+          "minWireVersion": 0,
+          "maxWireVersion": 0,
+          "roundTripTime": -1,
+          "minRoundTripTime": 0,
+          "lastUpdateTime": 7663947,
+          "lastWriteDate": 0,
+          "error": {
+            "errorLabelSet": {},
+            "beforeHandshake": false
+          },
+          "topologyVersion": null,
+          "setName": null,
+          "setVersion": null,
+          "electionId": null,
+          "logicalSessionTimeoutMinutes": null,
+          "maxMessageSizeBytes": null,
+          "maxWriteBatchSize": null,
+          "maxBsonObjectSize": null,
+          "primary": null,
+          "me": null,
+          "$clusterTime": null,
+          "iscryptd": false
+        },
+        "ac-ykadtfx-shard-00-01.l1amkmx.mongodb.net:27017": {
+          "address": "ac-ykadtfx-shard-00-01.l1amkmx.mongodb.net:27017",
+          "type": "Unknown",
+          "hosts": [],
+          "passives": [],
+          "arbiters": [],
+          "tags": {},
+          "minWireVersion": 0,
+          "maxWireVersion": 0,
+          "roundTripTime": -1,
+          "minRoundTripTime": 0,
+          "lastUpdateTime": 7664012,
+          "lastWriteDate": 0,
+          "error": {
+            "errorLabelSet": {},
+            "beforeHandshake": false
+          },
+          "topologyVersion": null,
+          "setName": null,
+          "setVersion": null,
+          "electionId": null,
+          "logicalSessionTimeoutMinutes": null,
+          "maxMessageSizeBytes": null,
+          "maxWriteBatchSize": null,
+          "maxBsonObjectSize": null,
+          "primary": null,
+          "me": null,
+          "$clusterTime": null,
+          "iscryptd": false
+        },
+        "ac-ykadtfx-shard-00-00.l1amkmx.mongodb.net:27017": {
+          "address": "ac-ykadtfx-shard-00-00.l1amkmx.mongodb.net:27017",
+          "type": "Unknown",
+          "hosts": [],
+          "passives": [],
+          "arbiters": [],
+          "tags": {},
+          "minWireVersion": 0,
+          "maxWireVersion": 0,
+          "roundTripTime": -1,
+          "minRoundTripTime": 0,
+          "lastUpdateTime": 7663990,
+          "lastWriteDate": 0,
+          "error": {
+            "errorLabelSet": {},
+            "beforeHandshake": false
+          },
+          "topologyVersion": null,
+          "setName": null,
+          "setVersion": null,
+          "electionId": null,
+          "logicalSessionTimeoutMinutes": null,
+          "maxMessageSizeBytes": null,
+          "maxWriteBatchSize": null,
+          "maxBsonObjectSize": null,
+          "primary": null,
+          "me": null,
+          "$clusterTime": null,
+          "iscryptd": false
+        }
+      },
+      "stale": false,
+      "compatible": true,
+      "heartbeatFrequencyMS": 10000,
+      "localThresholdMS": 15,
+      "setName": "atlas-wujy0y-shard-0",
+      "maxElectionId": null,
+      "maxSetVersion": null,
+      "commonWireVersion": 0,
+      "logicalSessionTimeoutMinutes": null
+    }
+  },
+  "rejection": true,
+  "date": "Thu Jun 19 2025 14:17:39 GMT+0300 (Eastern European Summer Time)",
+  "process": {
+    "pid": 18780,
+    "uid": null,
+    "gid": null,
+    "cwd": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend",
+    "execPath": "C:\\node.exe",
+    "version": "v22.14.0",
+    "argv": [
+      "C:\\node.exe",
+      "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\server.js"
+    ],
+    "memoryUsage": {
+      "rss": 74330112,
+      "heapTotal": 28434432,
+      "heapUsed": 25612200,
+      "external": 20692176,
+      "arrayBuffers": 18270964
+    }
+  },
+  "os": {
+    "loadavg": [
+      0,
+      0,
+      0
+    ],
+    "uptime": 7664.218
+  },
+  "trace": [
+    {
+      "column": 38,
+      "file": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\node_modules\\mongodb\\lib\\sdam\\topology.js",
+      "function": "Topology.selectServer",
+      "line": 326,
+      "method": "selectServer",
+      "native": false
+    },
+    {
+      "column": 28,
+      "file": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\node_modules\\mongodb\\lib\\sdam\\topology.js",
+      "function": "async Topology._connect",
+      "line": 200,
+      "method": "_connect",
+      "native": false
+    },
+    {
+      "column": 13,
+      "file": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\node_modules\\mongodb\\lib\\sdam\\topology.js",
+      "function": "async Topology.connect",
+      "line": 152,
+      "method": "connect",
+      "native": false
+    },
+    {
+      "column": 17,
+      "file": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\node_modules\\mongodb\\lib\\mongo_client.js",
+      "function": "async topologyConnect",
+      "line": 246,
+      "method": null,
+      "native": false
+    },
+    {
+      "column": 13,
+      "file": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\node_modules\\mongodb\\lib\\mongo_client.js",
+      "function": "async MongoClient._connect",
+      "line": 259,
+      "method": "_connect",
+      "native": false
+    },
+    {
+      "column": 13,
+      "file": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\node_modules\\mongodb\\lib\\mongo_client.js",
+      "function": "async MongoClient.connect",
+      "line": 184,
+      "method": "connect",
+      "native": false
+    },
+    {
+      "column": 16,
+      "file": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\node_modules\\mongodb\\lib\\mongo_client.js",
+      "function": "async MongoClient.connect",
+      "line": 406,
+      "method": "connect",
+      "native": false
+    }
+  ]
+}
+2025-06-19 14:19:26 [[32M[32MINFO[32M[39M]: [32m[32m[EMAIL] Transporter email inițializat pentru dezvoltare cu credențiale reale[32m[39m
+2025-06-19 14:19:26 [[32M[32MINFO[32M[39M]: [32m[32m[BOOKING-MODEL] Connecting to MongoDB in development mode: mongodb+srv://***:***@website.l1amkmx.mongodb.net/?retryWrites=true&w=majority&appName=Website[32m[39m
+2025-06-19 14:19:26 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Server running in development mode on port 5000[32m[39m
+2025-06-19 14:19:26 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Development server accessible at http://localhost:5000[32m[39m
+2025-06-19 14:19:26 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Health check available at http://localhost:5000/health[32m[39m
+2025-06-19 14:19:36 [[31M[31MERROR[31M[39M]: [31m[31m[BOOKING-MODEL] MongoDB connection error:[31m[39m
+Stack: MongooseServerSelectionError: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/
+    at _handleConnectionErrors (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongoose\lib\connection.js:1165:11)
+    at NativeConnection.openUri (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongoose\lib\connection.js:1096:11)
+    at async connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\models\Booking.js:753:5)
+Meta: {
+  "error": "Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/"
+}
+2025-06-19 14:19:36 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea automată...[32m[39m
+2025-06-19 14:19:36 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea rezervărilor expirate... Ora curentă: 2025-06-19T11:19:36.858Z[32m[39m
+2025-06-19 14:19:36 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Auto-cleanup job started - runs every 6 hours[32m[39m
+2025-06-19 14:19:36 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Successfully connected to MongoDB[32m[39m
+2025-06-19 14:19:46 [[31M[31MERROR[31M[39M]: [31m[31m[AUTH] Error creating default admin:[31m[39m
+Stack: MongooseError: Operation `users.countDocuments()` buffering timed out after 10000ms
+    at Timeout.<anonymous> (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongoose\lib\drivers\node-mongodb-native\collection.js:187:23)
+    at listOnTimeout (node:internal/timers:594:17)
+    at process.processTimers (node:internal/timers:529:7)
+Meta: {
+  "error": "Operation `users.countDocuments()` buffering timed out after 10000ms"
+}
+2025-06-19 14:19:46 [[31M[31MERROR[31M[39M]: [31m[31m[AUTO-CLEANUP] Auto-cleanup: EROARE GENERALĂ la curățarea rezervărilor expirate:[31m[39m
+Stack: MongooseError: Operation `bookings.find()` buffering timed out after 10000ms
+    at Timeout.<anonymous> (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongoose\lib\drivers\node-mongodb-native\collection.js:187:23)
+    at listOnTimeout (node:internal/timers:594:17)
+    at process.processTimers (node:internal/timers:529:7)
+Meta: {
+  "error": "Operation `bookings.find()` buffering timed out after 10000ms"
+}
+2025-06-19 14:19:50 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Received SIGINT. Starting graceful shutdown...[32m[39m
+2025-06-19 14:19:50 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Auto-cleanup job stopped[32m[39m
+2025-06-19 14:19:52 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Received SIGINT. Starting graceful shutdown...[32m[39m
+2025-06-19 14:19:52 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Auto-cleanup job stopped[32m[39m
+2025-06-19 14:19:56 [[31M[31MERROR[31M[39M]: [31m[31munhandledRejection: 4C2F0000:error:0A000438:SSL routines:ssl3_read_bytes:tlsv1 alert internal error:c:\ws\deps\openssl\openssl\ssl\record\rec_layer_s3.c:1605:SSL alert number 80[31m[39m
+
+[31m[31mMongoServerSelectionError: 4C2F0000:error:0A000438:SSL routines:ssl3_read_bytes:tlsv1 alert internal error:c:\ws\deps\openssl\openssl\ssl\record\rec_layer_s3.c:1605:SSL alert number 80[31m[39m
+
+[31m[31m    at Topology.selectServer (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\sdam\topology.js:326:38)[31m[39m
+[31m[31m    at async Topology._connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\sdam\topology.js:200:28)[31m[39m
+[31m[31m    at async Topology.connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\sdam\topology.js:152:13)[31m[39m
+[31m[31m    at async topologyConnect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:246:17)[31m[39m
+[31m[31m    at async MongoClient._connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:259:13)[31m[39m
+[31m[31m    at async MongoClient.connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:184:13)[31m[39m
+[31m[31m    at async MongoClient.connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:406:16)[31m[39m
+Stack: MongoServerSelectionError: 4C2F0000:error:0A000438:SSL routines:ssl3_read_bytes:tlsv1 alert internal error:c:\ws\deps\openssl\openssl\ssl\record\rec_layer_s3.c:1605:SSL alert number 80
+
+    at Topology.selectServer (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\sdam\topology.js:326:38)
+    at async Topology._connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\sdam\topology.js:200:28)
+    at async Topology.connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\sdam\topology.js:152:13)
+    at async topologyConnect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:246:17)
+    at async MongoClient._connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:259:13)
+    at async MongoClient.connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:184:13)
+    at async MongoClient.connect (C:\Users\parna\OneDrive\Desktop\Website-Darius-Hreniuc-Modificat\backend\node_modules\mongodb\lib\mongo_client.js:406:16)
+Meta: {
+  "error": {
+    "errorLabelSet": {},
+    "reason": {
+      "type": "ReplicaSetNoPrimary",
+      "servers": {
+        "ac-ykadtfx-shard-00-02.l1amkmx.mongodb.net:27017": {
+          "address": "ac-ykadtfx-shard-00-02.l1amkmx.mongodb.net:27017",
+          "type": "Unknown",
+          "hosts": [],
+          "passives": [],
+          "arbiters": [],
+          "tags": {},
+          "minWireVersion": 0,
+          "maxWireVersion": 0,
+          "roundTripTime": -1,
+          "minRoundTripTime": 0,
+          "lastUpdateTime": 7801448,
+          "lastWriteDate": 0,
+          "error": {
+            "errorLabelSet": {},
+            "beforeHandshake": false
+          },
+          "topologyVersion": null,
+          "setName": null,
+          "setVersion": null,
+          "electionId": null,
+          "logicalSessionTimeoutMinutes": null,
+          "maxMessageSizeBytes": null,
+          "maxWriteBatchSize": null,
+          "maxBsonObjectSize": null,
+          "primary": null,
+          "me": null,
+          "$clusterTime": null,
+          "iscryptd": false
+        },
+        "ac-ykadtfx-shard-00-00.l1amkmx.mongodb.net:27017": {
+          "address": "ac-ykadtfx-shard-00-00.l1amkmx.mongodb.net:27017",
+          "type": "Unknown",
+          "hosts": [],
+          "passives": [],
+          "arbiters": [],
+          "tags": {},
+          "minWireVersion": 0,
+          "maxWireVersion": 0,
+          "roundTripTime": -1,
+          "minRoundTripTime": 0,
+          "lastUpdateTime": 7801334,
+          "lastWriteDate": 0,
+          "error": {
+            "errorLabelSet": {},
+            "beforeHandshake": false
+          },
+          "topologyVersion": null,
+          "setName": null,
+          "setVersion": null,
+          "electionId": null,
+          "logicalSessionTimeoutMinutes": null,
+          "maxMessageSizeBytes": null,
+          "maxWriteBatchSize": null,
+          "maxBsonObjectSize": null,
+          "primary": null,
+          "me": null,
+          "$clusterTime": null,
+          "iscryptd": false
+        },
+        "ac-ykadtfx-shard-00-01.l1amkmx.mongodb.net:27017": {
+          "address": "ac-ykadtfx-shard-00-01.l1amkmx.mongodb.net:27017",
+          "type": "Unknown",
+          "hosts": [],
+          "passives": [],
+          "arbiters": [],
+          "tags": {},
+          "minWireVersion": 0,
+          "maxWireVersion": 0,
+          "roundTripTime": -1,
+          "minRoundTripTime": 0,
+          "lastUpdateTime": 7801303,
+          "lastWriteDate": 0,
+          "error": {
+            "errorLabelSet": {},
+            "beforeHandshake": false
+          },
+          "topologyVersion": null,
+          "setName": null,
+          "setVersion": null,
+          "electionId": null,
+          "logicalSessionTimeoutMinutes": null,
+          "maxMessageSizeBytes": null,
+          "maxWriteBatchSize": null,
+          "maxBsonObjectSize": null,
+          "primary": null,
+          "me": null,
+          "$clusterTime": null,
+          "iscryptd": false
+        }
+      },
+      "stale": false,
+      "compatible": true,
+      "heartbeatFrequencyMS": 10000,
+      "localThresholdMS": 15,
+      "setName": "atlas-wujy0y-shard-0",
+      "maxElectionId": null,
+      "maxSetVersion": null,
+      "commonWireVersion": 0,
+      "logicalSessionTimeoutMinutes": null
+    }
+  },
+  "rejection": true,
+  "date": "Thu Jun 19 2025 14:19:56 GMT+0300 (Eastern European Summer Time)",
+  "process": {
+    "pid": 27120,
+    "uid": null,
+    "gid": null,
+    "cwd": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend",
+    "execPath": "C:\\node.exe",
+    "version": "v22.14.0",
+    "argv": [
+      "C:\\node.exe",
+      "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\server.js"
+    ],
+    "memoryUsage": {
+      "rss": 72855552,
+      "heapTotal": 28172288,
+      "heapUsed": 25927136,
+      "external": 20692176,
+      "arrayBuffers": 18270964
+    }
+  },
+  "os": {
+    "loadavg": [
+      0,
+      0,
+      0
+    ],
+    "uptime": 7801.64
+  },
+  "trace": [
+    {
+      "column": 38,
+      "file": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\node_modules\\mongodb\\lib\\sdam\\topology.js",
+      "function": "Topology.selectServer",
+      "line": 326,
+      "method": "selectServer",
+      "native": false
+    },
+    {
+      "column": 28,
+      "file": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\node_modules\\mongodb\\lib\\sdam\\topology.js",
+      "function": "async Topology._connect",
+      "line": 200,
+      "method": "_connect",
+      "native": false
+    },
+    {
+      "column": 13,
+      "file": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\node_modules\\mongodb\\lib\\sdam\\topology.js",
+      "function": "async Topology.connect",
+      "line": 152,
+      "method": "connect",
+      "native": false
+    },
+    {
+      "column": 17,
+      "file": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\node_modules\\mongodb\\lib\\mongo_client.js",
+      "function": "async topologyConnect",
+      "line": 246,
+      "method": null,
+      "native": false
+    },
+    {
+      "column": 13,
+      "file": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\node_modules\\mongodb\\lib\\mongo_client.js",
+      "function": "async MongoClient._connect",
+      "line": 259,
+      "method": "_connect",
+      "native": false
+    },
+    {
+      "column": 13,
+      "file": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\node_modules\\mongodb\\lib\\mongo_client.js",
+      "function": "async MongoClient.connect",
+      "line": 184,
+      "method": "connect",
+      "native": false
+    },
+    {
+      "column": 16,
+      "file": "C:\\Users\\parna\\OneDrive\\Desktop\\Website-Darius-Hreniuc-Modificat\\backend\\node_modules\\mongodb\\lib\\mongo_client.js",
+      "function": "async MongoClient.connect",
+      "line": 406,
+      "method": "connect",
+      "native": false
+    }
+  ]
+}
+2025-06-19 14:20:48 [[32M[32MINFO[32M[39M]: [32m[32m[EMAIL] Transporter email inițializat pentru dezvoltare cu credențiale reale[32m[39m
+2025-06-19 14:20:48 [[32M[32MINFO[32M[39M]: [32m[32m[BOOKING-MODEL] Connecting to MongoDB in development mode: mongodb+srv://***:***@website.l1amkmx.mongodb.net/?retryWrites=true&w=majority&appName=Website[32m[39m
+2025-06-19 14:20:48 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Server running in development mode on port 5000[32m[39m
+2025-06-19 14:20:48 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Development server accessible at http://localhost:5000[32m[39m
+2025-06-19 14:20:48 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Health check available at http://localhost:5000/health[32m[39m
+2025-06-19 14:20:52 [[32M[32MINFO[32M[39M]: [32m[32m[BOOKING-MODEL] Connected to MongoDB in development mode[32m[39m
+2025-06-19 14:20:52 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea automată...[32m[39m
+2025-06-19 14:20:52 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea rezervărilor expirate... Ora curentă: 2025-06-19T11:20:52.872Z[32m[39m
+2025-06-19 14:20:52 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Auto-cleanup job started - runs every 6 hours[32m[39m
+2025-06-19 14:20:52 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Successfully connected to MongoDB[32m[39m
+2025-06-19 14:20:52 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Găsite 0 rezervări pending verificate pentru verificare[32m[39m
+2025-06-19 14:20:52 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există rezervări pending verificate[32m[39m
+2025-06-19 14:20:52 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există rezervări neconfirmate vechi de curățat[32m[39m
+2025-06-19 14:20:53 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup declined completat: 2 rezervări respinse curățate[32m[39m
+2025-06-19 14:20:53 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea datelor blocate expirate...[32m[39m
+2025-06-19 14:20:53 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: 1 date blocate expirate curățate[32m[39m
+2025-06-19 14:20:53 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Curățare completă finalizată - Total curățate: 3, Total erori: 0[32m[39m
+2025-06-19 14:21:37 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] 404 - Route not found: GET /.well-known/appspecific/com.chrome.devtools.json from IP: 127.0.0.1[32m[39m
+2025-06-19 14:21:52 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Received SIGINT. Starting graceful shutdown...[32m[39m
+2025-06-19 14:21:52 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Auto-cleanup job stopped[32m[39m
+2025-06-19 14:21:53 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Received SIGINT. Starting graceful shutdown...[32m[39m
+2025-06-19 14:21:53 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Auto-cleanup job stopped[32m[39m
+2025-06-19 14:22:02 [[31M[31MERROR[31M[39M]: [31m[31m[SERVER] Forceful shutdown[31m[39m
+2025-07-06 18:46:49 [[32M[32MINFO[32M[39M]: [32m[32m[EMAIL] Transporter email inițializat pentru dezvoltare cu credențiale reale[32m[39m
+2025-07-06 18:46:49 [[32M[32MINFO[32M[39M]: [32m[32m[BOOKING-MODEL] Connecting to MongoDB in development mode: mongodb+srv://***:***@website.l1amkmx.mongodb.net/?retryWrites=true&w=majority&appName=Website[32m[39m
+2025-07-06 18:46:49 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Server running in development mode on port 5000[32m[39m
+2025-07-06 18:46:49 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Development server accessible at http://localhost:5000[32m[39m
+2025-07-06 18:46:49 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER]  Health check available at http://localhost:5000/health[32m[39m
+2025-07-06 18:46:50 [[32M[32MINFO[32M[39M]: [32m[32m[BOOKING-MODEL] Connected to MongoDB in development mode[32m[39m
+2025-07-06 18:46:51 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea automată...[32m[39m
+2025-07-06 18:46:51 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea rezervărilor expirate... Ora curentă: 2025-07-06T15:46:51.005Z[32m[39m
+2025-07-06 18:46:51 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Auto-cleanup job started - runs every 6 hours[32m[39m
+2025-07-06 18:46:51 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Successfully connected to MongoDB[32m[39m
+2025-07-06 18:46:51 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Găsite 0 rezervări pending verificate pentru verificare[32m[39m
+2025-07-06 18:46:51 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există rezervări pending verificate[32m[39m
+2025-07-06 18:46:51 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Șters booking neconfirmat 68697644750e2ff874d88b62 pentru parnau patrick - creat la Sat Jul 05 2025 22:00:20 GMT+0300 (Eastern European Summer Time)[32m[39m
+2025-07-06 18:46:51 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup neconfirmate completat: 1 rezervări curățate, 0 erori[32m[39m
+2025-07-06 18:46:51 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există rezervări respinse vechi de curățat[32m[39m
+2025-07-06 18:46:51 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Începe curățarea datelor blocate expirate...[32m[39m
+2025-07-06 18:46:51 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Nu există date blocate expirate de curățat[32m[39m
+2025-07-06 18:46:51 [[32M[32MINFO[32M[39M]: [32m[32m[AUTO-CLEANUP] Auto-cleanup: Curățare completă finalizată - Total curățate: 1, Total erori: 0[32m[39m
+2025-07-06 18:52:29 [[32M[32MINFO[32M[39M]: [32m[32m[SERVER] Received SIGINT. Starting graceful shutdown...[32m[39m

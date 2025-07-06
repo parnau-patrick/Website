@@ -3,18 +3,8 @@ const mongoose = require('mongoose');
 
 // Sistem de logging îmbunătățit
 const NODE_ENV = process.env.NODE_ENV;
-const logger = {
-  info: NODE_ENV === 'production' ? () => {} : console.log,
-  warn: console.warn,
-  error: (message, error) => {
-    if (NODE_ENV === 'production') {
-      console.error(message, error instanceof Error ? error.message : error);
-    } else {
-      console.error(message, error);
-    }
-  }
-};
-
+const { createContextLogger } = require('../utils/logger');
+const logger = createContextLogger('BLOCKED-DATES-MODEL');
 // Schema pentru blocarea datelor și orelor
 const blockedDateSchema = new mongoose.Schema({
   date: {
@@ -362,6 +352,29 @@ blockedDateSchema.virtual('formattedInfo').get(function() {
 // Asigură-te că virtualele sunt incluse în JSON
 blockedDateSchema.set('toJSON', { virtuals: true });
 blockedDateSchema.set('toObject', { virtuals: true });
+
+blockedDateSchema.statics.cleanupExpiredBlockedDates = async function() {
+  try {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(23, 59, 59, 999);
+    
+    const result = await this.deleteMany({
+      date: { $lt: yesterday }
+    });
+    
+    return {
+      success: true,
+      deletedCount: result.deletedCount
+    };
+  } catch (error) {
+    return {
+      success: false,
+      deletedCount: 0,
+      error: error.message
+    };
+  }
+};
 
 // Creează modelul
 const BlockedDate = mongoose.model('BlockedDate', blockedDateSchema);

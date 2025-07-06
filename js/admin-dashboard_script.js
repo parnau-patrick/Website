@@ -1,7 +1,4 @@
-  // Global variables for block functionality
-let currentBlockingBookingId = null;
-let currentBlockDatePopupMode = 'block'; // 'block' sau 'view'
-let blockedDatesCache = [];
+// admin-dashboard_script.js - VERSIUNE OPTIMIZATĂ
 
 // Sistem de logging îmbunătățit pentru frontend
 const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
@@ -16,61 +13,239 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
     ? 'http://localhost:5000/api'
     : window.location.protocol + '//' + window.location.hostname + '/api';
 
-// Utilitare
-function sanitizeHtml(str) {
-    if (!str) return '';
-    const temp = document.createElement('div');
-    temp.textContent = str;
-    return temp.innerHTML;
+// Cache DOM pentru performanță optimă
+const domCache = {
+    // Containere principale
+    pendingCards: null,
+    confirmedCards: null,
+    loadingOverlay: null,
+    toast: null,
+    
+    // Controale
+    datePicker: null,
+    logoutBtn: null,
+    refreshPendingBtn: null,
+    refreshConfirmedBtn: null,
+    todayBtn: null,
+    manualCleanupBtn: null,
+    blockDateBtn: null,
+    viewBlockedDatesBtn: null,
+    
+    // Popup-uri
+    blockPopup: null,
+    blockDatePopup: null,
+    viewBlockedDatesPopup: null,
+    
+    // Butoane popup
+    blockPopupClose: null,
+    blockCancelBtn: null,
+    blockConfirmBtn: null,
+    blockDateClose: null,
+    blockDateCancel: null,
+    blockDateConfirm: null,
+    viewBlockedClose: null,
+    viewBlockedCancel: null,
+    
+    // Input-uri
+    blockReasonInput: null,
+    blockDateInput: null,
+    fullDayCheckbox: null,
+    hoursSelectionDiv: null,
+    hoursContainer: null,
+    blockedDatesContent: null,
+    
+    init() {
+        // Containere principale
+        this.pendingCards = document.getElementById('pendingReservationsCards');
+        this.confirmedCards = document.getElementById('confirmedReservationsCards');
+        this.loadingOverlay = document.getElementById('loadingOverlay');
+        this.toast = document.getElementById('toast');
+        
+        // Controale
+        this.datePicker = document.getElementById('datePicker');
+        this.logoutBtn = document.getElementById('logoutBtn');
+        this.refreshPendingBtn = document.getElementById('refreshPendingBtn');
+        this.refreshConfirmedBtn = document.getElementById('refreshConfirmedBtn');
+        this.todayBtn = document.getElementById('todayBtn');
+        this.manualCleanupBtn = document.getElementById('manualCleanupBtn');
+        this.blockDateBtn = document.getElementById('blockDateBtn');
+        this.viewBlockedDatesBtn = document.getElementById('viewBlockedDatesBtn');
+        
+        // Popup-uri
+        this.blockPopup = document.getElementById('blockPopup');
+        this.blockDatePopup = document.getElementById('blockDatePopup');
+        this.viewBlockedDatesPopup = document.getElementById('viewBlockedDatesPopup');
+        
+        // Butoane popup
+        this.blockPopupClose = document.getElementById('blockPopupClose');
+        this.blockCancelBtn = document.getElementById('blockCancelBtn');
+        this.blockConfirmBtn = document.getElementById('blockConfirmBtn');
+        this.blockDateClose = document.getElementById('blockDateClose');
+        this.blockDateCancel = document.getElementById('blockDateCancel');
+        this.blockDateConfirm = document.getElementById('blockDateConfirm');
+        this.viewBlockedClose = document.getElementById('viewBlockedClose');
+        this.viewBlockedCancel = document.getElementById('viewBlockedCancel');
+        
+        // Input-uri
+        this.blockReasonInput = document.getElementById('blockReasonInput');
+        this.blockDateInput = document.getElementById('blockDateInput');
+        this.fullDayCheckbox = document.getElementById('fullDayBlock');
+        this.hoursSelectionDiv = document.getElementById('hoursSelection');
+        this.hoursContainer = document.getElementById('hoursContainer');
+        this.blockedDatesContent = document.getElementById('blockedDatesContent');
+    }
+};
+
+// Variabile globale pentru block functionality
+let currentBlockingBookingId = null;
+let currentBlockDatePopupMode = 'block';
+let blockedDatesCache = [];
+
+// Pool de debouncing pentru operații costisitoare
+const debouncePool = new Map();
+
+function debounce(key, func, wait) {
+    if (debouncePool.has(key)) {
+        clearTimeout(debouncePool.get(key));
+    }
+    
+    const timeout = setTimeout(() => {
+        func();
+        debouncePool.delete(key);
+    }, wait);
+    
+    debouncePool.set(key, timeout);
+}
+
+// Pool de notificări optimizat
+const notificationPool = {
+    current: null,
+    timeout: null,
+    
+    show(message, isSuccess = true) {
+        // Elimină notificarea existentă
+        if (this.current) {
+            this.current.remove();
+            this.current = null;
+        }
+        
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+            this.timeout = null;
+        }
+
+        if (!domCache.toast) return;
+
+        domCache.toast.textContent = message;
+        domCache.toast.className = 'toast ' + (isSuccess ? 'success' : 'error');
+        domCache.toast.style.display = 'block';
+        this.current = domCache.toast;
+        
+        this.timeout = setTimeout(() => {
+            if (domCache.toast) {
+                domCache.toast.style.display = 'none';
+            }
+            this.current = null;
+        }, 3000);
+    }
+};
+
+// Utilitare optimizate
+function sanitizeHtml(input) {
+    if (input === null || input === undefined) {
+        return '';
+    }
+    
+    let str;
+    try {
+        str = String(input);
+    } catch (error) {
+        logger.error('Error converting input to string:', error);
+        return '';
+    }
+    
+    if (str.length > 10000) {
+        logger.warn('Input too long, truncating for security');
+        str = str.substring(0, 10000);
+    }
+    
+    const xssPatterns = [
+        /<script[^>]*>.*?<\/script>/gi,
+        /<iframe[^>]*>.*?<\/iframe>/gi,
+        /<object[^>]*>.*?<\/object>/gi,
+        /<embed[^>]*>.*?<\/embed>/gi,
+        /<link[^>]*>/gi,
+        /<meta[^>]*>/gi,
+        /javascript:/gi,
+        /vbscript:/gi,
+        /on\w+\s*=/gi,
+        /expression\s*\(/gi,
+        /data:text\/html/gi,
+        /data:application\/x-javascript/gi,
+        /<svg[^>]*>.*?<\/svg>/gi
+    ];
+    
+    for (const pattern of xssPatterns) {
+        if (pattern.test(str)) {
+            logger.warn('XSS attempt detected and blocked:', str.substring(0, 100));
+            return '';
+        }
+    }
+    
+    str = str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+    str = str.replace(/&#x?[0-9a-fA-F]+;/g, '');
+    str = str.replace(/%[0-9a-fA-F]{2}/g, '');
+    
+    const div = document.createElement('div');
+    div.textContent = str;
+    let sanitized = div.innerHTML;
+    
+    if (/<[^>]+>/.test(sanitized)) {
+        logger.warn('HTML detected after sanitization, blocking');
+        return '';
+    }
+    
+    return sanitized;
 }
 
 function showLoading() {
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) overlay.style.display = 'flex';
+    if (domCache.loadingOverlay) {
+        domCache.loadingOverlay.style.display = 'flex';
+    }
 }
 
 function hideLoading() {
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) overlay.style.display = 'none';
+    if (domCache.loadingOverlay) {
+        domCache.loadingOverlay.style.display = 'none';
+    }
 }
 
 function showToast(message, isSuccess = true) {
-    const toast = document.getElementById('toast');
-    if (toast) {
-        toast.textContent = message;
-        toast.className = 'toast ' + (isSuccess ? 'success' : 'error');
-        toast.style.display = 'block';
-        
-        setTimeout(() => {
-            toast.style.display = 'none';
-        }, 3000);
-    }
+    notificationPool.show(message, isSuccess);
 }
 
-// Block popup functionality
+// Block popup functionality optimizată
 function showBlockPopup(bookingId) {
     currentBlockingBookingId = bookingId;
-    const reasonInput = document.getElementById('blockReasonInput');
-    const popup = document.getElementById('blockPopup');
-    
-    if (reasonInput) {
-        reasonInput.value = '';
+    if (domCache.blockReasonInput) {
+        domCache.blockReasonInput.value = '';
     }
-    if (popup) {
-        popup.style.display = 'flex';
+    if (domCache.blockPopup) {
+        domCache.blockPopup.style.display = 'flex';
     }
 }
 
 function hideBlockPopup() {
     currentBlockingBookingId = null;
-    const popup = document.getElementById('blockPopup');
-    if (popup) {
-        popup.style.display = 'none';
+    if (domCache.blockPopup) {
+        domCache.blockPopup.style.display = 'none';
     }
 }
 
-// Create card for booking
+// FUNCȚIE OPTIMIZATĂ - Create card for booking cu DocumentFragment
 function createCard(booking, type = 'pending') {
+    // Utilizează DocumentFragment pentru performanță optimă
+    const fragment = document.createDocumentFragment();
     const card = document.createElement('div');
     card.className = 'card';
 
@@ -94,6 +269,7 @@ function createCard(booking, type = 'pending') {
         `;
     }
 
+    // Construiește HTML-ul complet o singură dată
     card.innerHTML = `
         <div class="card-header">
             <div class="card-title">${sanitizeHtml(booking.clientName)}</div>
@@ -142,7 +318,8 @@ function createCard(booking, type = 'pending') {
         ${actionsHtml}
     `;
 
-    return card;
+    fragment.appendChild(card);
+    return fragment;
 }
 
 // Enhanced authentication and token management functions
@@ -202,154 +379,9 @@ async function fetchWithAuth(url, options = {}) {
     }
 }
 
-// Initialize dashboard
-document.addEventListener('DOMContentLoaded', async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        window.location.href = 'login.html';
-        return;
-    }
+// FUNCȚII OPTIMIZATE - Load bookings cu batch processing
 
-    if (!setupTokenExpiry()) {
-        return;
-    }
-
-    showLoading();
-    try {
-        // Verify token validity
-        const response = await fetchWithAuth(`${API_URL}/dashboard`);
-        
-        if (!response) {
-            return;
-        }
-
-        if (!response.ok) {
-            throw new Error('Authentication failed');
-        }
-
-        // Set current date in date picker
-        const today = new Date().toISOString().split('T')[0];
-        const datePicker = document.getElementById('datePicker');
-        if (datePicker) {
-            datePicker.value = today;
-        }
-
-        // Load data
-        await loadPendingBookings();
-        await loadConfirmedBookings(today);
-        await loadBlockedDates(); // Încarcă cache-ul pentru datele blocate
-
-        // Add event listeners
-        setupEventListeners();
-
-    } catch (error) {
-        logger.error('Error initializing dashboard:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('tokenTimestamp');
-        window.location.href = 'login.html';
-    } finally {
-        hideLoading();
-    }
-});
-
-// Setup all event listeners
-function setupEventListeners() {
-    const datePicker = document.getElementById('datePicker');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const refreshPendingBtn = document.getElementById('refreshPendingBtn');
-    const refreshConfirmedBtn = document.getElementById('refreshConfirmedBtn');
-    const todayBtn = document.getElementById('todayBtn');
-    const manualCleanupBtn = document.getElementById('manualCleanupBtn');
-
-    if (datePicker) {
-        datePicker.addEventListener('change', async () => {
-            await loadConfirmedBookings(datePicker.value);
-        });
-    }
-
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', logout);
-    }
-
-    if (refreshPendingBtn) {
-        refreshPendingBtn.addEventListener('click', loadPendingBookings);
-    }
-
-    if (refreshConfirmedBtn) {
-        refreshConfirmedBtn.addEventListener('click', () => {
-            const picker = document.getElementById('datePicker');
-            if (picker) {
-                loadConfirmedBookings(picker.value);
-            }
-        });
-    }
-
-    if (todayBtn) {
-        todayBtn.addEventListener('click', () => {
-            const today = new Date().toISOString().split('T')[0];
-            const picker = document.getElementById('datePicker');
-            if (picker) {
-                picker.value = today;
-                loadConfirmedBookings(today);
-            }
-        });
-    }
-
-    if (manualCleanupBtn) {
-        manualCleanupBtn.addEventListener('click', runManualCleanup);
-    }
-
-    // Setup block popup event listeners
-    setupBlockPopupListeners();
-    setupBlockDateListeners(); // Nou
-}
-
-
-// Setup block popup event listeners
-function setupBlockPopupListeners() {
-    const blockPopupClose = document.getElementById('blockPopupClose');
-    const blockCancelBtn = document.getElementById('blockCancelBtn');
-    const blockPopup = document.getElementById('blockPopup');
-    const blockConfirmBtn = document.getElementById('blockConfirmBtn');
-
-    if (blockPopupClose) {
-        blockPopupClose.addEventListener('click', hideBlockPopup);
-    }
-    
-    if (blockCancelBtn) {
-        blockCancelBtn.addEventListener('click', hideBlockPopup);
-    }
-    
-    if (blockPopup) {
-        blockPopup.addEventListener('click', function(e) {
-            if (e.target === this) {
-                hideBlockPopup();
-            }
-        });
-    }
-
-    if (blockConfirmBtn) {
-        blockConfirmBtn.addEventListener('click', async function() {
-            const reasonInput = document.getElementById('blockReasonInput');
-            const reason = reasonInput ? reasonInput.value.trim() : '';
-            
-            if (!reason) {
-                showToast('Te rugăm să introduci un motiv pentru blocare', false);
-                return;
-            }
-
-            if (!currentBlockingBookingId) {
-                showToast('Eroare: ID rezervare lipsește', false);
-                return;
-            }
-
-            await blockUser(currentBlockingBookingId, reason);
-            hideBlockPopup();
-        });
-    }
-}
-
-// Load pending reservations
+// OPTIMIZATĂ - Load pending reservations
 async function loadPendingBookings() {
     showLoading();
     try {
@@ -365,34 +397,34 @@ async function loadPendingBookings() {
 
         const data = await response.json();
         
-        // Get the cards container
-        const cardsContainer = document.getElementById('pendingReservationsCards');
-        
-        if (cardsContainer) {
-            cardsContainer.innerHTML = '';
+        if (!domCache.pendingCards) {
+            return;
         }
+
+        // OPTIMIZARE: Construiește toate card-urile ca DocumentFragment
+        const fragment = document.createDocumentFragment();
 
         if (data.bookings && data.bookings.length > 0) {
             data.bookings.forEach(booking => {
-                // Create card
-                if (cardsContainer) {
-                    const card = createCard(booking, 'pending');
-                    cardsContainer.appendChild(card);
-                }
+                const cardFragment = createCard(booking, 'pending');
+                fragment.appendChild(cardFragment);
             });
+
+            // O singură operație DOM
+            domCache.pendingCards.innerHTML = '';
+            domCache.pendingCards.appendChild(fragment);
 
             // Add event listeners for action buttons
             addActionButtonListeners();
         } else {
             // No pending reservations
-            if (cardsContainer) {
-                const emptyCard = document.createElement('div');
-                emptyCard.className = 'card';
-                emptyCard.innerHTML = `
-                    <div class="empty-message">Nu există rezervări în așteptare</div>
-                `;
-                cardsContainer.appendChild(emptyCard);
-            }
+            const emptyCard = document.createElement('div');
+            emptyCard.className = 'card';
+            emptyCard.innerHTML = `
+                <div class="empty-message">Nu există rezervări în așteptare</div>
+            `;
+            domCache.pendingCards.innerHTML = '';
+            domCache.pendingCards.appendChild(emptyCard);
         }
     } catch (error) {
         logger.error('Error loading pending reservations:', error);
@@ -400,9 +432,10 @@ async function loadPendingBookings() {
     } finally {
         hideLoading();
     }
-}
+};
 
-// Load confirmed reservations for a specific date
+
+// OPTIMIZATĂ - Load confirmed reservations for a specific date
 async function loadConfirmedBookings(date) {
     if (!date) {
         logger.warn('No date provided for loadConfirmedBookings');
@@ -423,49 +456,41 @@ async function loadConfirmedBookings(date) {
 
         const data = await response.json();
         
-        // Get the cards container
-        const cardsContainer = document.getElementById('confirmedReservationsCards');
-        
-        // Clear existing content safely
-        if (cardsContainer) {
-            try {
-                cardsContainer.innerHTML = '';
-            } catch (e) {
-                logger.error('Error clearing cards container:', e);
-            }
+        if (!domCache.confirmedCards) {
+            return;
         }
+
+        // OPTIMIZARE: Construiește toate card-urile ca DocumentFragment
+        const fragment = document.createDocumentFragment();
 
         if (data.bookings && data.bookings.length > 0) {
             data.bookings.forEach((booking, index) => {
                 try {
-                    // Create card
-                    if (cardsContainer) {
-                        const card = createCard(booking, 'confirmed');
-                        if (card) {
-                            cardsContainer.appendChild(card);
-                        }
-                    }
+                    const cardFragment = createCard(booking, 'confirmed');
+                    fragment.appendChild(cardFragment);
                 } catch (e) {
                     logger.error(`Error processing booking ${index}:`, e);
                 }
             });
 
             // Add total card
-            if (cardsContainer) {
-                try {
-                    const totalCard = document.createElement('div');
-                    totalCard.className = 'card total-card';
-                    totalCard.innerHTML = `
-                        <div class="card-field">
-                            <div class="card-field-label">Total Încasări</div>
-                            <div class="card-field-value">${data.totalPrice} RON</div>
-                        </div>
-                    `;
-                    cardsContainer.appendChild(totalCard);
-                } catch (e) {
-                    logger.error('Error adding total card:', e);
-                }
+            try {
+                const totalCard = document.createElement('div');
+                totalCard.className = 'card total-card';
+                totalCard.innerHTML = `
+                    <div class="card-field">
+                        <div class="card-field-label">Total Încasări</div>
+                        <div class="card-field-value">${data.totalPrice} RON</div>
+                    </div>
+                `;
+                fragment.appendChild(totalCard);
+            } catch (e) {
+                logger.error('Error adding total card:', e);
             }
+
+            // O singură operație DOM
+            domCache.confirmedCards.innerHTML = '';
+            domCache.confirmedCards.appendChild(fragment);
 
             // Add event listeners for cancel buttons
             try {
@@ -475,28 +500,30 @@ async function loadConfirmedBookings(date) {
             }
         } else {
             // No confirmed reservations for this date
-            if (cardsContainer) {
-                try {
-                    const emptyCard = document.createElement('div');
-                    emptyCard.className = 'card';
-                    emptyCard.innerHTML = `
-                        <div class="empty-message">Nu există rezervări confirmate pentru această dată</div>
-                    `;
-                    cardsContainer.appendChild(emptyCard);
+            try {
+                const emptyCard = document.createElement('div');
+                emptyCard.className = 'card';
+                emptyCard.innerHTML = `
+                    <div class="empty-message">Nu există rezervări confirmate pentru această dată</div>
+                `;
+                fragment.appendChild(emptyCard);
 
-                    // Add total card showing 0
-                    const totalCard = document.createElement('div');
-                    totalCard.className = 'card total-card';
-                    totalCard.innerHTML = `
-                        <div class="card-field">
-                            <div class="card-field-label">Total Încasări</div>
-                            <div class="card-field-value">0 RON</div>
-                        </div>
-                    `;
-                    cardsContainer.appendChild(totalCard);
-                } catch (e) {
-                    logger.error('Error adding empty card:', e);
-                }
+                // Add total card showing 0
+                const totalCard = document.createElement('div');
+                totalCard.className = 'card total-card';
+                totalCard.innerHTML = `
+                    <div class="card-field">
+                        <div class="card-field-label">Total Încasări</div>
+                        <div class="card-field-value">0 RON</div>
+                    </div>
+                `;
+                fragment.appendChild(totalCard);
+
+                // O singură operație DOM
+                domCache.confirmedCards.innerHTML = '';
+                domCache.confirmedCards.appendChild(fragment);
+            } catch (e) {
+                logger.error('Error adding empty card:', e);
             }
         }
     } catch (error) {
@@ -587,12 +614,11 @@ async function confirmBooking(bookingId) {
 
         const result = await response.json();
 
-        // Reload data
-        await loadPendingBookings();
-        const datePicker = document.getElementById('datePicker');
-        if (datePicker && datePicker.value) {
-            await loadConfirmedBookings(datePicker.value);
-        }
+        // OPTIMIZARE: Încarcă datele în paralel
+        await Promise.all([
+            loadPendingBookings(),
+            domCache.datePicker?.value ? loadConfirmedBookings(domCache.datePicker.value) : Promise.resolve()
+        ]);
         
         let message = 'Rezervare confirmată cu succes!';
         if (result.emailStatus === 'sent') {
@@ -635,12 +661,11 @@ async function declineBooking(bookingId) {
 
         const result = await response.json();
 
-        // Reload data
-        await loadPendingBookings();
-        const datePicker = document.getElementById('datePicker');
-        if (datePicker && datePicker.value) {
-            await loadConfirmedBookings(datePicker.value);
-        }
+        // OPTIMIZARE: Încarcă datele în paralel
+        await Promise.all([
+            loadPendingBookings(),
+            domCache.datePicker?.value ? loadConfirmedBookings(domCache.datePicker.value) : Promise.resolve()
+        ]);
         
         let message = 'Rezervare refuzată cu succes!';
         if (result.emailStatus === 'sent') {
@@ -692,94 +717,69 @@ async function blockUser(bookingId, reason) {
     }
 }
 
-function setupBlockDateListeners() {
-    const blockDateBtn = document.getElementById('blockDateBtn');
-    const blockDatePopup = document.getElementById('blockDatePopup');
-    const blockDateClose = document.getElementById('blockDateClose');
-    const blockDateCancel = document.getElementById('blockDateCancel');
-    const blockDateConfirm = document.getElementById('blockDateConfirm');
+// OPTIMIZATE - Block date functions
+
+// OPTIMIZATĂ - Generate hour checkboxes
+function generateHourCheckboxes() {
+    if (!domCache.hoursContainer) return;
     
-    // Popup pentru vizualizare
-    const viewBlockedDatesBtn = document.getElementById('viewBlockedDatesBtn');
-    const viewBlockedDatesPopup = document.getElementById('viewBlockedDatesPopup');
-    const viewBlockedClose = document.getElementById('viewBlockedClose');
-    const viewBlockedCancel = document.getElementById('viewBlockedCancel');
+    // FIXAT: Folosește data locală pentru a evita problemele de timezone
+    const selectedDateString = domCache.blockDateInput ? domCache.blockDateInput.value : null;
     
-    const fullDayCheckbox = document.getElementById('fullDayBlock');
-    const hoursSelectionDiv = document.getElementById('hoursSelection');
-
-    if (blockDateBtn) {
-        blockDateBtn.addEventListener('click', showBlockDatePopup);
+    let selectedDate;
+    if (selectedDateString) {
+        const [year, month, day] = selectedDateString.split('-').map(num => parseInt(num, 10));
+        selectedDate = new Date(year, month - 1, day); // Luna în JS este 0-indexată
+    } else {
+        selectedDate = new Date();
     }
-
-    if (viewBlockedDatesBtn) {
-        viewBlockedDatesBtn.addEventListener('click', showBlockedDatesView);
+    
+    const dayOfWeek = selectedDate.getDay();
+    
+    // Determină intervalul de ore bazat pe ziua săptămânii
+    let startHour, endHour;
+    
+    if (dayOfWeek === 6) { // Sâmbătă - program special 10:00-13:00
+        startHour = 10;
+        endHour = 13;
+    } else if (dayOfWeek === 0) { // Duminică - închis
+        domCache.hoursContainer.innerHTML = '<p style="text-align: center; color: #888;">Suntem închiși duminica</p>';
+        return;
+    } else { // Luni-Vineri - program normal 10:00-19:00
+        startHour = 10;
+        endHour = 19;
     }
-
-    // Event listeners pentru popup-ul de blocare
-    if (blockDateClose) {
-        blockDateClose.addEventListener('click', () => {
-            blockDatePopup.style.display = 'none';
-        });
+    
+    // OPTIMIZARE: Generează toate orele ca string
+    const hoursHTML = [];
+    for (let hour = startHour; hour < endHour; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) {
+            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+            hoursHTML.push(`
+                <div class="hour-checkbox-wrapper">
+                    <label class="hour-checkbox-label">
+                        <input type="checkbox" value="${timeString}" class="hour-checkbox">
+                        <span>${timeString}</span>
+                    </label>
+                </div>
+            `);
+        }
     }
-
-    if (blockDateCancel) {
-        blockDateCancel.addEventListener('click', () => {
-            blockDatePopup.style.display = 'none';
-        });
-    }
-
-    // Event listeners pentru popup-ul de vizualizare
-    if (viewBlockedClose) {
-        viewBlockedClose.addEventListener('click', () => {
-            viewBlockedDatesPopup.style.display = 'none';
-        });
-    }
-
-    if (viewBlockedCancel) {
-        viewBlockedCancel.addEventListener('click', () => {
-            viewBlockedDatesPopup.style.display = 'none';
-        });
-    }
-
-    // Event listeners pentru funcționalitate
-    if (fullDayCheckbox) {
-        fullDayCheckbox.addEventListener('change', function() {
-            if (hoursSelectionDiv) {
-                hoursSelectionDiv.style.display = this.checked ? 'none' : 'block';
-            }
-        });
-    }
-
-    if (blockDateConfirm) {
-        blockDateConfirm.addEventListener('click', handleBlockDateConfirm);
-    }
-
-    const blockDateInput = document.getElementById('blockDateInput');
-    if (blockDateInput) {
-        blockDateInput.addEventListener('change', function() {
-            // Regenerează orele când se schimbă data
-            const fullDayCheckbox = document.getElementById('fullDayBlock');
-            if (fullDayCheckbox && !fullDayCheckbox.checked) {
-                generateHourCheckboxes();
-            }
-        });
-    }
-
+    
+    // O singură operație DOM
+    domCache.hoursContainer.innerHTML = hoursHTML.join('');
 }
 
 function showBlockDatePopup() {
-    const blockDatePopup = document.getElementById('blockDatePopup');
-    const popupTitle = document.getElementById('blockDatePopupTitle');
-    const popupContent = document.getElementById('blockDatePopupContent');
-    
-    // Verificare că elementele există
-    if (!blockDatePopup) {
+    if (!domCache.blockDatePopup) {
         showToast('Eroare: Popup-ul nu a fost găsit', false);
         return;
     }
     
     // Restaurează conținutul original pentru blocarea datelor
+    const popupTitle = document.getElementById('blockDatePopupTitle');
+    const popupContent = document.getElementById('blockDatePopupContent');
+    
     if (popupTitle) {
         popupTitle.textContent = 'Blochează Dată';
     }
@@ -803,58 +803,53 @@ function showBlockDatePopup() {
                 </div>
             </div>
         `;
+        
+        // Re-cache DOM elements
+        domCache.blockDateInput = document.getElementById('blockDateInput');
+        domCache.fullDayCheckbox = document.getElementById('fullDayBlock');
+        domCache.hoursSelectionDiv = document.getElementById('hoursSelection');
+        domCache.hoursContainer = document.getElementById('hoursContainer');
     }
     
     // Configurare și inițializare input pentru dată
-    const blockDateInput = document.getElementById('blockDateInput');
-    if (blockDateInput) {
-        // Setează data minimă la data curentă
+    if (domCache.blockDateInput) {
         const today = new Date().toISOString().split('T')[0];
-        blockDateInput.setAttribute('min', today);
-        blockDateInput.value = today;
+        domCache.blockDateInput.setAttribute('min', today);
+        domCache.blockDateInput.value = today;
         
-        // Event listener simplu - doar pentru regenerarea orelor
-        blockDateInput.addEventListener('change', function() {
-            // Regenerează orele când se schimbă data (pentru programul de sâmbătă vs săptămână)
-            const fullDayCheckbox = document.getElementById('fullDayBlock');
-            if (fullDayCheckbox && !fullDayCheckbox.checked) {
+        // Event listener pentru regenerarea orelor
+        domCache.blockDateInput.addEventListener('change', function() {
+            if (domCache.fullDayCheckbox && !domCache.fullDayCheckbox.checked) {
                 generateHourCheckboxes();
             }
         });
     }
     
     // Configurare checkbox pentru "Blochează toată ziua"
-    const fullDayCheckbox = document.getElementById('fullDayBlock');
-    const hoursSelectionDiv = document.getElementById('hoursSelection');
-    
-    if (fullDayCheckbox && hoursSelectionDiv) {
-        // Setare inițială
-        fullDayCheckbox.checked = true;
-        hoursSelectionDiv.style.display = 'none';
+    if (domCache.fullDayCheckbox && domCache.hoursSelectionDiv) {
+        domCache.fullDayCheckbox.checked = true;
+        domCache.hoursSelectionDiv.style.display = 'none';
         
-        // Event listener pentru schimbarea tipului de blocare
-        fullDayCheckbox.addEventListener('change', function() {
+        domCache.fullDayCheckbox.addEventListener('change', function() {
             if (this.checked) {
-                // Blochează toată ziua - ascunde selecția orelor
-                hoursSelectionDiv.style.display = 'none';
+                domCache.hoursSelectionDiv.style.display = 'none';
             } else {
-                // Blochează ore specifice - afișează selecția orelor
-                hoursSelectionDiv.style.display = 'block';
+                domCache.hoursSelectionDiv.style.display = 'block';
                 generateHourCheckboxes();
             }
         });
     }
     
-    // Generează orele pentru data curentă (pentru cazul când utilizatorul debifează "toată ziua")
+    // Generează orele pentru data curentă
     generateHourCheckboxes();
     
     // Afișează popup-ul
-    blockDatePopup.style.display = 'flex';
+    domCache.blockDatePopup.style.display = 'flex';
     
-    // Îmbunătățire UX - focus pe input-ul de dată
+    // Focus pe input-ul de dată
     setTimeout(() => {
-        if (blockDateInput) {
-            blockDateInput.focus();
+        if (domCache.blockDateInput) {
+            domCache.blockDateInput.focus();
         }
     }, 150);
     
@@ -862,78 +857,21 @@ function showBlockDatePopup() {
 }
 
 function hideBlockDatePopup() {
-    const blockDatePopup = document.getElementById('blockDatePopup');
-    if (blockDatePopup) {
-        blockDatePopup.style.display = 'none';
+    if (domCache.blockDatePopup) {
+        domCache.blockDatePopup.style.display = 'none';
     }
 }
 
-function generateHourCheckboxes() {
-    const hoursContainer = document.getElementById('hoursContainer');
-    if (!hoursContainer) return;
-    
-    hoursContainer.innerHTML = '';
-    
-    // Verifică ce zi este selectată
-    const blockDateInput = document.getElementById('blockDateInput');
-    const selectedDate = blockDateInput ? new Date(blockDateInput.value) : new Date();
-    const dayOfWeek = selectedDate.getDay(); // 0 = Duminică, 6 = Sâmbătă
-    
-    // Determină intervalul de ore bazat pe ziua săptămânii
-    let startHour, endHour;
-    
-    if (dayOfWeek === 6) { // Sâmbătă - program special 10:00-13:00
-        startHour = 10;
-        endHour = 13;
-    } else if (dayOfWeek === 0) { // Duminică - închis
-        // Nu genera ore pentru duminică
-        hoursContainer.innerHTML = '<p style="text-align: center; color: #888;">Suntem închiși duminica</p>';
-        return;
-    } else { // Luni-Vineri - program normal 10:00-19:00
-        startHour = 10;
-        endHour = 19;
-    }
-    
-    // Generează orele pentru intervalul determinat
-    const hours = [];
-    for (let hour = startHour; hour < endHour; hour++) {
-        for (let minute = 0; minute < 60; minute += 30) {
-            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-            hours.push(timeString);
-        }
-    }
-    
-    
-    // Creează checkbox-urile pentru ore
-    hours.forEach(hour => {
-        const checkboxWrapper = document.createElement('div');
-        checkboxWrapper.className = 'hour-checkbox-wrapper';
-        
-        checkboxWrapper.innerHTML = `
-            <label class="hour-checkbox-label">
-                <input type="checkbox" value="${hour}" class="hour-checkbox">
-                <span>${hour}</span>
-            </label>
-        `;
-        
-        hoursContainer.appendChild(checkboxWrapper);
-    });
-}
-
-// Funcție pentru confirmarea blocării
+// Funcție pentru confirmarea blocării - OPTIMIZATĂ
 async function handleBlockDateConfirm() {
-    const blockDateInput = document.getElementById('blockDateInput');
-    const fullDayCheckbox = document.getElementById('fullDayBlock');
-    const hourCheckboxes = document.querySelectorAll('.hour-checkbox:checked');
-    
-    // Verificare elemente de interfață
-    if (!blockDateInput || !fullDayCheckbox) {
+    if (!domCache.blockDateInput || !domCache.fullDayCheckbox) {
         showToast('Eroare în interfață', false);
         return;
     }
     
-    const selectedDate = blockDateInput.value;
-    const isFullDay = fullDayCheckbox.checked;
+    const selectedDate = domCache.blockDateInput.value;
+    const isFullDay = domCache.fullDayCheckbox.checked;
+    const hourCheckboxes = document.querySelectorAll('.hour-checkbox:checked');
     
     // Validare dată selectată
     if (!selectedDate) {
@@ -941,8 +879,10 @@ async function handleBlockDateConfirm() {
         return;
     }
     
-    // Verificare că data nu este în trecut
-    const selectedDateObj = new Date(selectedDate);
+    // FIXAT: Crează data folosind componentele locale pentru a evita problemele de timezone
+    const [year, month, day] = selectedDate.split('-').map(num => parseInt(num, 10));
+    const selectedDateObj = new Date(year, month - 1, day); // Luna în JS este 0-indexată
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     selectedDateObj.setHours(0, 0, 0, 0);
@@ -953,7 +893,7 @@ async function handleBlockDateConfirm() {
     }
     
     // Verificare că nu este duminică
-    const dayOfWeek = selectedDateObj.getDay(); // 0 = Duminică
+    const dayOfWeek = selectedDateObj.getDay();
     if (dayOfWeek === 0) {
         showToast('Nu se poate bloca duminica - suntem deja închiși în această zi!', false);
         return;
@@ -965,7 +905,6 @@ async function handleBlockDateConfirm() {
         return;
     }
     
-    // Validare numărul de ore (previne atacuri)
     if (!isFullDay && hourCheckboxes.length > 20) {
         showToast('Prea multe ore selectate (maxim 20)', false);
         return;
@@ -980,7 +919,6 @@ async function handleBlockDateConfirm() {
         return;
     }
     
-    // Încep procesul de blocare
     showLoading();
     try {
         const response = await fetchWithAuth(`${API_URL}/admin/blocked-dates`, {
@@ -989,7 +927,7 @@ async function handleBlockDateConfirm() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                date: selectedDate,
+                date: selectedDate, // Trimite direct string-ul în format YYYY-MM-DD
                 isFullDay: isFullDay,
                 hours: isFullDay ? [] : selectedHours
             })
@@ -1004,7 +942,6 @@ async function handleBlockDateConfirm() {
         
         const result = await response.json();
         
-        // Succes - închide popup și afișează mesaj
         hideBlockDatePopup();
         showToast(result.message || 'Data a fost blocată cu succes', true);
         
@@ -1019,7 +956,7 @@ async function handleBlockDateConfirm() {
     }
 }
 
-// Funcție pentru încărcarea datelor blocate
+// Funcție pentru încărcarea datelor blocate - OPTIMIZATĂ
 async function loadBlockedDates() {
     try {
         const response = await fetchWithAuth(`${API_URL}/admin/blocked-dates`);
@@ -1041,33 +978,29 @@ async function loadBlockedDates() {
 }
 
 async function showBlockedDatesView() {
-    const viewBlockedDatesPopup = document.getElementById('viewBlockedDatesPopup');
-    const blockedDatesContent = document.getElementById('blockedDatesContent');
-    
+    if (!domCache.viewBlockedDatesPopup || !domCache.blockedDatesContent) {
+        showToast('Eroare în interfață', false);
+        return;
+    }
+
     showLoading();
     try {
         const blockedDates = await loadBlockedDates();
         
-        if (!viewBlockedDatesPopup || !blockedDatesContent) {
-            showToast('Eroare în interfață', false);
-            return;
-        }
-        
         if (blockedDates.length === 0) {
-            blockedDatesContent.innerHTML = `
+            domCache.blockedDatesContent.innerHTML = `
                 <div class="no-blocked-dates">
                     <p>Nu există date blocate în prezent.</p>
                 </div>
             `;
         } else {
-            let blockedDatesHTML = '<div class="blocked-dates-list">';
-            
-            blockedDates.forEach(blocked => {
+            // OPTIMIZARE: Construiește HTML-ul ca string
+            const blockedDatesHTML = blockedDates.map(blocked => {
                 const hoursText = blocked.isFullDayBlocked 
                     ? 'Toată ziua' 
                     : blocked.blockedHours.join(', ');
                 
-                blockedDatesHTML += `
+                return `
                     <div class="blocked-date-item">
                         <div class="blocked-date-info">
                             <h4>${blocked.dateFormatted}</h4>
@@ -1080,13 +1013,12 @@ async function showBlockedDatesView() {
                         </button>
                     </div>
                 `;
-            });
+            }).join('');
             
-            blockedDatesHTML += '</div>';
-            blockedDatesContent.innerHTML = blockedDatesHTML;
+            domCache.blockedDatesContent.innerHTML = `<div class="blocked-dates-list">${blockedDatesHTML}</div>`;
             
             // Adaugă event listeners pentru butoanele de deblocare
-            const unblockButtons = blockedDatesContent.querySelectorAll('.unblock-date-btn');
+            const unblockButtons = domCache.blockedDatesContent.querySelectorAll('.unblock-date-btn');
             unblockButtons.forEach(button => {
                 button.addEventListener('click', async (e) => {
                     const blockedDateId = e.target.getAttribute('data-id');
@@ -1097,7 +1029,7 @@ async function showBlockedDatesView() {
             });
         }
         
-        viewBlockedDatesPopup.style.display = 'flex';
+        domCache.viewBlockedDatesPopup.style.display = 'flex';
         
     } catch (error) {
         logger.error('Error showing blocked dates view:', error);
@@ -1109,7 +1041,6 @@ async function showBlockedDatesView() {
 
 // Funcție pentru deblocarea unei date
 async function unblockDate(blockedDateId) {
-    
     showLoading();
     try {
         const response = await fetchWithAuth(`${API_URL}/admin/blocked-dates/${blockedDateId}`, {
@@ -1157,12 +1088,12 @@ async function runManualCleanup() {
         const message = `Curățare completă: ${result.results.totalCleaned} rezervări curățate, ${result.results.totalErrors} erori`;
         showToast(message, true);
         
-        // Reîncarcă datele
-        await loadPendingBookings();
-        const datePicker = document.getElementById('datePicker');
-        if (datePicker && datePicker.value) {
-            await loadConfirmedBookings(datePicker.value);
+        // OPTIMIZARE: Reîncarcă datele în paralel
+        const promises = [loadPendingBookings()];
+        if (domCache.datePicker && domCache.datePicker.value) {
+            promises.push(loadConfirmedBookings(domCache.datePicker.value));
         }
+        await Promise.all(promises);
         
     } catch (error) {
         logger.error('Error running manual cleanup:', error);
@@ -1174,17 +1105,18 @@ async function runManualCleanup() {
 
 /**
  * Verifică dacă o dată este deja blocată
- * @param {string} selectedDate - Data selectată
- * @param {boolean} isFullDay - Dacă se blochează toată ziua
- * @param {Array} selectedHours - Orele selectate (dacă nu e toată ziua)
- * @returns {Object} - Rezultatul verificării
  */
 function checkIfDateAlreadyBlocked(selectedDate, isFullDay, selectedHours = []) {
     try {
         // Verifică în cache-ul local
         const existingBlock = blockedDatesCache.find(blocked => {
-            const blockedDate = new Date(blocked.date).toISOString().split('T')[0];
-            return blockedDate === selectedDate;
+            // FIXAT: Folosește data locală pentru comparare corectă
+            const blockedDateObj = new Date(blocked.date);
+            
+            // Creează string-ul de dată local pentru comparare
+            const blockedDateString = `${blockedDateObj.getFullYear()}-${(blockedDateObj.getMonth() + 1).toString().padStart(2, '0')}-${blockedDateObj.getDate().toString().padStart(2, '0')}`;
+            
+            return blockedDateString === selectedDate;
         });
         
         if (!existingBlock) {
@@ -1225,11 +1157,144 @@ function checkIfDateAlreadyBlocked(selectedDate, isFullDay, selectedHours = []) 
         
     } catch (error) {
         logger.error('Error checking if date is already blocked:', error);
-        // În caz de eroare, permite operația să continue
         return { isBlocked: false };
     }
 }
 
+// Setup all event listeners - OPTIMIZAT
+function setupEventListeners() {
+    // Optimizare: event listener unic pentru data picker cu debouncing
+    if (domCache.datePicker) {
+        const debouncedDateChange = debounce('datePicker', () => {
+            loadConfirmedBookings(domCache.datePicker.value);
+        }, 300);
+        
+        domCache.datePicker.addEventListener('change', debouncedDateChange);
+    }
+
+    if (domCache.logoutBtn) {
+        domCache.logoutBtn.addEventListener('click', logout);
+    }
+
+    // Optimizare: debouncing pentru refresh buttons
+    if (domCache.refreshPendingBtn) {
+        domCache.refreshPendingBtn.addEventListener('click', () => {
+            debounce('refreshPending', loadPendingBookings, 500);
+        });
+    }
+
+    if (domCache.refreshConfirmedBtn) {
+        domCache.refreshConfirmedBtn.addEventListener('click', () => {
+            debounce('refreshConfirmed', () => {
+                if (domCache.datePicker) {
+                    loadConfirmedBookings(domCache.datePicker.value);
+                }
+            }, 500);
+        });
+    }
+
+    if (domCache.todayBtn) {
+        domCache.todayBtn.addEventListener('click', () => {
+            const today = new Date().toISOString().split('T')[0];
+            if (domCache.datePicker) {
+                domCache.datePicker.value = today;
+                loadConfirmedBookings(today);
+            }
+        });
+    }
+
+    if (domCache.manualCleanupBtn) {
+        domCache.manualCleanupBtn.addEventListener('click', () => {
+            debounce('manualCleanup', runManualCleanup, 1000);
+        });
+    }
+
+    // Setup block popup event listeners
+    setupBlockPopupListeners();
+    setupBlockDateListeners();
+}
+
+// Setup block popup event listeners - OPTIMIZAT
+function setupBlockPopupListeners() {
+    if (domCache.blockPopupClose) {
+        domCache.blockPopupClose.addEventListener('click', hideBlockPopup);
+    }
+    
+    if (domCache.blockCancelBtn) {
+        domCache.blockCancelBtn.addEventListener('click', hideBlockPopup);
+    }
+    
+    if (domCache.blockPopup) {
+        domCache.blockPopup.addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideBlockPopup();
+            }
+        });
+    }
+
+    if (domCache.blockConfirmBtn) {
+        domCache.blockConfirmBtn.addEventListener('click', async function() {
+            const reason = domCache.blockReasonInput ? domCache.blockReasonInput.value.trim() : '';
+            
+            if (!reason) {
+                showToast('Te rugăm să introduci un motiv pentru blocare', false);
+                return;
+            }
+
+            if (!currentBlockingBookingId) {
+                showToast('Eroare: ID rezervare lipsește', false);
+                return;
+            }
+
+            await blockUser(currentBlockingBookingId, reason);
+            hideBlockPopup();
+        });
+    }
+}
+
+function setupBlockDateListeners() {
+    if (domCache.blockDateBtn) {
+        domCache.blockDateBtn.addEventListener('click', showBlockDatePopup);
+    }
+
+    if (domCache.viewBlockedDatesBtn) {
+        domCache.viewBlockedDatesBtn.addEventListener('click', showBlockedDatesView);
+    }
+
+    // Event listeners pentru popup-ul de blocare
+    if (domCache.blockDateClose) {
+        domCache.blockDateClose.addEventListener('click', () => {
+            hideBlockDatePopup();
+        });
+    }
+
+    if (domCache.blockDateCancel) {
+        domCache.blockDateCancel.addEventListener('click', () => {
+            hideBlockDatePopup();
+        });
+    }
+
+    // Event listeners pentru popup-ul de vizualizare
+    if (domCache.viewBlockedClose) {
+        domCache.viewBlockedClose.addEventListener('click', () => {
+            if (domCache.viewBlockedDatesPopup) {
+                domCache.viewBlockedDatesPopup.style.display = 'none';
+            }
+        });
+    }
+
+    if (domCache.viewBlockedCancel) {
+        domCache.viewBlockedCancel.addEventListener('click', () => {
+            if (domCache.viewBlockedDatesPopup) {
+                domCache.viewBlockedDatesPopup.style.display = 'none';
+            }
+        });
+    }
+
+    if (domCache.blockDateConfirm) {
+        domCache.blockDateConfirm.addEventListener('click', handleBlockDateConfirm);
+    }
+}
 
 // Logout
 function logout() {
@@ -1237,3 +1302,68 @@ function logout() {
     localStorage.removeItem('tokenTimestamp');
     window.location.href = 'login.html';
 }
+
+// Initialize dashboard - OPTIMIZAT
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    if (!setupTokenExpiry()) {
+        return;
+    }
+
+    // Inițializează cache-ul DOM
+    domCache.init();
+
+    showLoading();
+    try {
+        // Verify token validity
+        const response = await fetchWithAuth(`${API_URL}/dashboard`);
+        
+        if (!response) {
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error('Authentication failed');
+        }
+
+        // Set current date in date picker
+        const today = new Date().toISOString().split('T')[0];
+        if (domCache.datePicker) {
+            domCache.datePicker.value = today;
+        }
+
+        // OPTIMIZARE: Load data în paralel în loc de secvențial
+        const [pendingResult, confirmedResult, blockedDatesResult] = await Promise.allSettled([
+            loadPendingBookings(),
+            loadConfirmedBookings(today),
+            loadBlockedDates()
+        ]);
+
+        // Verifică dacă au existat erori și le gestionează
+        if (pendingResult.status === 'rejected') {
+            logger.error('Eroare la încărcarea rezervărilor pending:', pendingResult.reason);
+        }
+        if (confirmedResult.status === 'rejected') {
+            logger.error('Eroare la încărcarea rezervărilor confirmate:', confirmedResult.reason);
+        }
+        if (blockedDatesResult.status === 'rejected') {
+            logger.error('Eroare la încărcarea datelor blocate:', blockedDatesResult.reason);
+        }
+
+        // Add event listeners
+        setupEventListeners();
+
+    } catch (error) {
+        logger.error('Error initializing dashboard:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('tokenTimestamp');
+        window.location.href = 'login.html';
+    } finally {
+        hideLoading();
+    }
+});

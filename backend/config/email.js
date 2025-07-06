@@ -6,25 +6,16 @@ const Client = require('../models/Client');
 
 // Sistem de logging îmbunătățit
 const NODE_ENV = process.env.NODE_ENV;
-const logger = {
-  info: NODE_ENV === 'production' ? () => {} : console.log,  // ← Silențios în producție
-  warn: console.warn,
-  error: (message, error) => {
-    if (NODE_ENV === 'production') {
-      console.error(message, error instanceof Error ? error.message : error);
-    } else {
-      console.error(message, error);
-    }
-  }
-};
+const { createContextLogger } = require('../utils/logger');
+const logger = createContextLogger('EMAIL');
 
 // Obține credențialele de email din variabilele de mediu
-const EMAIL_HOST = process.env.EMAIL_HOST || 'smtp.gmail.com';
-const EMAIL_PORT = parseInt(process.env.EMAIL_PORT || '587');
+const EMAIL_HOST = process.env.EMAIL_HOST ;
+const EMAIL_PORT = parseInt(process.env.EMAIL_PORT);
 const EMAIL_USER = process.env.EMAIL_USER;
 const EMAIL_PASS = process.env.EMAIL_PASS;
-const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@dariushreniuc.com';
-const CONTACT_EMAIL = process.env.CONTACT_EMAIL || 'contact@dariushreniuc.com';
+const EMAIL_FROM = process.env.EMAIL_FROM;
+const CONTACT_EMAIL = process.env.CONTACT_EMAIL;
 
 // Validează existența credențialelor
 if (!EMAIL_HOST || !EMAIL_PORT || !EMAIL_USER || !EMAIL_PASS) {

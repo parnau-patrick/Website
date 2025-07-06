@@ -4,17 +4,8 @@ const { User } = require('../models/Booking'); // Update this path if you separa
 
 // Sistem de logging îmbunătățit
 const NODE_ENV = process.env.NODE_ENV;
-const logger = {
-  info: NODE_ENV === 'production' ? () => {} : console.log,
-  warn: console.warn,
-  error: (message, error) => {
-    if (NODE_ENV === 'production') {
-      console.error(message, error instanceof Error ? error.message : error);
-    } else {
-      console.error(message, error);
-    }
-  }
-};
+const { createContextLogger } = require('../utils/logger');
+const logger = createContextLogger('AUTH');
 
 // Get JWT secret from environment variables
 const JWT_SECRET = process.env.JWT_SECRET || (NODE_ENV === 'development' ? 'dev_jwt_secret' : null);

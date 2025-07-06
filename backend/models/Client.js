@@ -3,17 +3,8 @@ const mongoose = require('mongoose');
 
 // Sistem de logging îmbunătățit
 const NODE_ENV = process.env.NODE_ENV;
-const logger = {
-  info: NODE_ENV === 'production' ? () => {} : console.log,
-  warn: console.warn,
-  error: (message, error) => {
-    if (NODE_ENV === 'production') {
-      console.error(message, error instanceof Error ? error.message : error);
-    } else {
-      console.error(message, error);
-    }
-  }
-};
+const { createContextLogger } = require('../utils/logger');
+const logger = createContextLogger('CLIENT-MODEL');
 
 /**
  * Client Schema - Stochează informații unice despre clienți (actualizat pentru email)
@@ -114,7 +105,6 @@ clientSchema.pre('save', function(next) {
 
 // FIXED: Crearea unor indecși pentru performanță - REMOVED duplicate email index
 clientSchema.index({ phoneNumber: 1 });
-// REMOVED: clientSchema.index({ email: 1 }, { unique: true }); // This was duplicate!
 clientSchema.index({ isBlocked: 1 });
 clientSchema.index({ lastVisit: -1 });
 clientSchema.index({ createdAt: 1 });
@@ -195,21 +185,6 @@ clientSchema.methods.block = async function(reason) {
     return await this.save();
   } catch (error) {
     logger.error('Error blocking client:', error);
-    throw error;
-  }
-};
-
-/**
- * Deblochează client
- */
-clientSchema.methods.unblock = async function() {
-  try {
-    this.isBlocked = false;
-    this.blockReason = null;
-    this.blockDate = null;
-    return await this.save();
-  } catch (error) {
-    logger.error('Error unblocking client:', error);
     throw error;
   }
 };

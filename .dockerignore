@@ -36,3 +36,19 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+yarn-debug.log*
+yarn-error.log*
+yarn.lock
+.yarn/
+.yarnrc*
+
+logs/
+*.log
+log/
+combined.log
+error.log
+access.log
+app.log
+server.log
+application.log

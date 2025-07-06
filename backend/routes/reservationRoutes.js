@@ -50,8 +50,6 @@ router.get(
   blockedDatesController.getBlockedHoursForDate
 );
 
-// ===== RUTE PENTRU AUTO-CLEANUP =====
-
 // Rulează manual curățarea automată (doar admin)
 router.post(
   '/admin/cleanup',

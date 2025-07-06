@@ -1,20 +1,12 @@
 // backend/controllers/blockedDatesController.js
 const BlockedDate = require('../models/BlockedDates');
+const { Booking } = require('../models/Booking'); 
 const mongoose = require('mongoose');
 
 // Sistem de logging îmbunătățit
 const NODE_ENV = process.env.NODE_ENV;
-const logger = {
-  info: NODE_ENV === 'production' ? () => {} : console.log,
-  warn: console.warn,
-  error: (message, error) => {
-    if (NODE_ENV === 'production') {
-      console.error(message, error instanceof Error ? error.message : error);
-    } else {
-      console.error(message, error);
-    }
-  }
-};
+const { createContextLogger } = require('../utils/logger');
+const logger = createContextLogger('BLOCKED-DATES');
 
 /**
  * Standardizează răspunsurile de eroare
@@ -25,6 +17,102 @@ const errorResponse = (res, status, message, extra = {}) => {
     message,
     ...extra
   });
+};
+
+/**
+ * Verifică dacă există rezervări confirmate pentru o dată/ore specifice
+ */
+const checkExistingBookings = async (date, isFullDay, hours = []) => {
+  try {
+    // Pregătește intervalul de căutare pentru ziua specificată
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    // Caută rezervări confirmate pentru această dată
+    const existingBookings = await Booking.find({
+      date: {
+        $gte: startOfDay,
+        $lte: endOfDay
+      },
+      status: { $in: ['confirmed', 'pending'] } 
+    }).populate('service');
+    
+    if (existingBookings.length === 0) {
+      return { hasConflict: false, conflictingBookings: [] };
+    }
+    
+    // Dacă se încearcă blocarea întregii zile
+    if (isFullDay) {
+      return {
+        hasConflict: true,
+        conflictingBookings: existingBookings.map(booking => ({
+          id: booking._id,
+          clientName: booking.clientName,
+          time: booking.time,
+          service: booking.service ? booking.service.name : 'Unknown Service',
+          status: booking.status
+        })),
+        message: `Nu se poate bloca întreaga zi. Există ${existingBookings.length} rezervări pentru această dată.`
+      };
+    }
+    
+    
+    const conflictingBookings = [];
+    
+    for (const booking of existingBookings) {
+      const service = booking.service;
+      if (!service) continue;
+      
+      // Calculează intervalul orar al rezervării existente
+      const [bookingHour, bookingMinute] = booking.time.split(':').map(Number);
+      const bookingStartMinutes = bookingHour * 60 + bookingMinute;
+      const bookingEndMinutes = bookingStartMinutes + service.duration;
+      
+      // Verifică dacă vreo oră blocată se suprapune cu rezervarea
+      for (const hour of hours) {
+        const [blockHour, blockMinute] = hour.split(':').map(Number);
+        const blockStartMinutes = blockHour * 60 + blockMinute;
+        const blockEndMinutes = blockStartMinutes + 30; // Presupunem slot-uri de 30 min
+        
+        // Verifică suprapunere
+        if (
+          (blockStartMinutes >= bookingStartMinutes && blockStartMinutes < bookingEndMinutes) ||
+          (blockEndMinutes > bookingStartMinutes && blockEndMinutes <= bookingEndMinutes) ||
+          (blockStartMinutes <= bookingStartMinutes && blockEndMinutes >= bookingEndMinutes)
+        ) {
+          conflictingBookings.push({
+            id: booking._id,
+            clientName: booking.clientName,
+            time: booking.time,
+            service: service.name,
+            status: booking.status,
+            conflictingHour: hour
+          });
+        }
+      }
+    }
+    
+    if (conflictingBookings.length > 0) {
+      return {
+        hasConflict: true,
+        conflictingBookings,
+        message: `Nu se pot bloca orele selectate. Există rezervări care se suprapun.`
+      };
+    }
+    
+    return { hasConflict: false, conflictingBookings: [] };
+    
+  } catch (error) {
+    logger.error('Error checking existing bookings:', error);
+    return {
+      hasConflict: true,
+      conflictingBookings: [],
+      message: 'Eroare la verificarea rezervărilor existente'
+    };
+  }
 };
 
 /**
@@ -71,6 +159,19 @@ const blockDate = async (req, res) => {
       if (hours.length > 20) {
         return errorResponse(res, 400, 'Prea multe ore selectate');
       }
+    }
+    
+    // VERIFICARE NOUĂ: Controlează dacă există rezervări pentru data/orele specificate
+    const bookingCheck = await checkExistingBookings(selectedDate, isFullDay, hours || []);
+    
+    if (bookingCheck.hasConflict) {
+      // Returnează detalii despre rezervările care intră în conflict
+      return res.status(409).json({
+        success: false,
+        message: bookingCheck.message,
+        conflictingBookings: bookingCheck.conflictingBookings,
+        suggestAction: 'Anulează sau mută rezervările existente înainte de a bloca această dată/ore.'
+      });
     }
     
     // Generează mesajul automat cu numele zilei

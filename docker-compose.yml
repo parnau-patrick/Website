@@ -8,11 +8,16 @@ services:
     container_name: barbershop_backend
     env_file:
       - backend/.env
+    environment:
+      - TZ=Europe/Bucharest
     ports:
       - "5000:5000"
     networks:
       - barbershop-network
     restart: unless-stopped
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
@@ -25,6 +30,8 @@ services:
       context: .
       dockerfile: frontend.Dockerfile
     container_name: barbershop_frontend
+    environment:
+      - TZ=Europe/Bucharest
     ports:
       - "80:80"
     depends_on:
@@ -32,6 +39,9 @@ services:
     networks:
       - barbershop-network
     restart: unless-stopped
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
 
 networks:
   barbershop-network:

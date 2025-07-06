@@ -12,7 +12,6 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 
-
 // Import routes and middleware
 const bookingRoutes = require('./routes/reservationRoutes');
 const { createDefaultAdmin, authenticateJWT } = require('./middleware/authMiddleware');
@@ -33,38 +32,18 @@ const startAutoCleanup = () => {
     logger.error('Initial auto-cleanup failed:', error);
   });
   
-  // Apoi rulează la fiecare 6 ore (21600000 ms)
   cleanupInterval = setInterval(() => {
     runFullCleanup().catch(error => {
       logger.error('Scheduled auto-cleanup failed:', error);
     });
-  }, 6 * 60 * 60 * 1000); // 6 ore
+  }, 10 * 60 * 1000); // 10 min
   
   logger.info('Auto-cleanup job started - runs every 6 hours');
 };
 
 // Enhanced logging system - PRODUCTION READY
-const logger = {
-  info: (message, ...args) => {
-    // Only log info messages in development
-    if (NODE_ENV !== 'production') {
-      const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] INFO:`, message, ...args);
-    }
-  },
-  warn: (message, ...args) => {
-    const timestamp = new Date().toISOString();
-    console.warn(`[${timestamp}] WARN:`, message, ...args);
-  },
-  error: (message, error = null, ...args) => {
-    const timestamp = new Date().toISOString();
-    if (error instanceof Error) {
-      console.error(`[${timestamp}] ERROR:`, message, error.message, error.stack, ...args);
-    } else {
-      console.error(`[${timestamp}] ERROR:`, message, error, ...args);
-    }
-  }
-};
+const { createContextLogger } = require('./utils/logger');
+const logger = createContextLogger('SERVER');
 
 // Critical environment variables validation for production
 if (NODE_ENV === 'production') {
@@ -232,7 +211,7 @@ app.use(cors({
 // Production-optimized rate limiting
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: NODE_ENV === 'production' ? 100 : 1000, // Stricter in production
+  max: NODE_ENV === 'production' ? 100 : 1000, 
   message: {
     success: false,
     message: 'Too many requests. Please try again later.'
@@ -240,14 +219,13 @@ const generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
-    // Skip rate limiting for static files in development
     return NODE_ENV === 'development' && req.url.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg)$/);
   }
 });
 
 const authLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: NODE_ENV === 'production' ? 5 : 50, // Very strict for auth
+  max: NODE_ENV === 'production' ? 5 : 50, 
   message: {
     success: false,
     message: 'Too many authentication attempts. Please try again later.'
@@ -258,7 +236,7 @@ const authLimiter = rateLimit({
 
 const apiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: NODE_ENV === 'production' ? 20 : 100, // API rate limit
+  max: NODE_ENV === 'production' ? 60 : 100, 
   message: {
     success: false,
     message: 'API rate limit exceeded. Please slow down.'
@@ -320,30 +298,30 @@ app.use((req, res, next) => {
   next();
 });
 
-// Production-optimized cache control
+
 app.use((req, res, next) => {
   if (NODE_ENV === 'production') {
-    // JavaScript and CSS files - Long cache with versioning
+    
     if (req.url.match(/\.(js|css)$/)) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); // 1 year
       res.setHeader('ETag', 'strong');
     } 
-    // Images and fonts - Medium cache
+    
     else if (req.url.match(/\.(png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
       res.setHeader('Cache-Control', 'public, max-age=2592000'); // 30 days
     } 
-    // HTML files - Short cache with revalidation
+  
     else if (req.url.match(/\.html$/) || req.url === '/') {
       res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate'); // 5 minutes
     }
-    // API endpoints - No cache for dynamic content
+   
     else if (req.url.startsWith('/api/')) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
     }
   } else {
-    // Development - No caching
+   
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
@@ -645,6 +623,7 @@ app.use((err, req, res, next) => {
 });
 
 // Graceful shutdown handling
+// Graceful shutdown handling
 const gracefulShutdown = (signal) => {
   logger.info(`Received ${signal}. Starting graceful shutdown...`);
   
@@ -654,14 +633,18 @@ const gracefulShutdown = (signal) => {
     logger.info('Auto-cleanup job stopped');
   }
   
-  server.close(() => {
+  server.close(async () => {
     logger.info('HTTP server closed');
     
-    // Close database connection
-    require('mongoose').connection.close(false, () => {
+    // FIX: Folosește await în loc de callback
+    try {
+      await require('mongoose').connection.close();
       logger.info('MongoDB connection closed');
       process.exit(0);
-    });
+    } catch (error) {
+      logger.error('Error closing MongoDB connection:', error);
+      process.exit(1);
+    }
   });
   
   // Force close after 10 seconds
