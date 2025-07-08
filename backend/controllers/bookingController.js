@@ -312,6 +312,29 @@ const getAvailableTimeSlots = async (req, res) => {
   }
 };
 
+const suspendActiveTimeLock = async (req, res) => {
+  try {
+    const result = await TimeLock.deleteMany({
+      lockedBy: req.sessionID
+    });
+
+    if (req.session && req.session.bookingData) {
+      req.session.bookingData = null;
+      req.session.bookingDataExpiry = null;
+      req.session.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'TimeLock suspendat cu succes',
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    logger.error('Error suspending TimeLock:', error);
+    return errorResponse(res, 500, 'Eroare la suspendarea TimeLock-ului');
+  }
+};
+
 
 const createBooking = async (req, res) => {
   try {
@@ -629,22 +652,6 @@ const completeBooking = async (req, res) => {
     client.totalBookings += 1;
     await client.save();
     
-    // Send verification email with booking ID
-    const emailResult = await sendVerificationEmail(email, verificationCode, booking._id);
-    
-    if (!emailResult.success) {
-      // If email fails, delete the booking and return error
-      await Booking.findByIdAndDelete(booking._id);
-      // Revert client's total bookings counter
-      client.totalBookings -= 1;
-      await client.save();
-      
-      return errorResponse(res, 500, emailResult.error || 'Nu s-a putut trimite codul de verificare. Vă rugăm să încercați mai târziu.');
-    }
-    
-    // Update client's email counter
-    await client.incrementEmailCounter();
-    
     // Clear session data and store booking ID
     if (req.session) {
       req.session.bookingData = null;
@@ -652,12 +659,35 @@ const completeBooking = async (req, res) => {
       req.session.bookingId = booking._id;
       req.session.save();
     }
-    
+
+    // RĂSPUNDE IMEDIAT la frontend (nu mai așteaptă email-ul)
     res.status(200).json({ 
       success: true, 
-      message: 'Codul de verificare a fost trimis',
+      message: 'Rezervarea a fost creată. Se trimite codul de verificare...',
       bookingId: booking._id,
       serviceName: service.name
+    });
+
+    // TRIMITE EMAIL-UL ASINCRON în background
+    setImmediate(async () => {
+      try {
+        logger.info(`🚀 Trimit email asincron pentru booking ${booking._id}...`);
+        
+        const emailResult = await sendVerificationEmail(email, verificationCode, booking._id);
+        
+        if (emailResult.success) {
+          logger.info(`✅ Email trimis cu succes pentru booking ${booking._id}`);
+          // Update client's email counter
+          await client.incrementEmailCounter();
+        } else {
+          logger.error(`❌ Email eșuat pentru booking ${booking._id}:`, emailResult.error);
+          
+          // OPȚIONAL: Poți să marchezi booking-ul că are probleme cu email-ul
+          // await Booking.findByIdAndUpdate(booking._id, { emailSent: false });
+        }
+      } catch (asyncEmailError) {
+        logger.error(`💥 Eroare critică la email asincron pentru booking ${booking._id}:`, asyncEmailError);
+      }
     });
   } catch (error) {
     logger.error('Error completing booking:', error);
@@ -1548,8 +1578,8 @@ const runManualCleanup = async (req, res) => {
 // Export all functions
 module.exports = {
   getServices,
-  getAvailableTimeSlots, // Actualizat
-  createBooking, // Actualizat
+  getAvailableTimeSlots, 
+  createBooking, 
   completeBooking,
   verifyBooking,
   resendVerificationCode,
@@ -1565,5 +1595,6 @@ module.exports = {
   completeBookingService,
   getAllClients,
   suspendBooking,
-  runManualCleanup // Nou
+  runManualCleanup,
+  suspendActiveTimeLock
 };

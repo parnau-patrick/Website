@@ -95,6 +95,12 @@ router.post(
   bookingController.completeBooking
 );
 
+router.delete(
+  '/bookings/active-timelock',
+  validationMiddleware.sanitizeInputs,
+  bookingController.suspendActiveTimeLock
+);
+
 router.post(
   '/bookings/verify',
   validationMiddleware.validateVerification,

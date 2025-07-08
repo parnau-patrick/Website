@@ -501,6 +501,24 @@ async function verifyTimeSlotStillAvailable(selectedTime) {
     }
 }
 
+async function suspendActiveTimeLock() {
+    try {
+        const response = await fetch(`${API_URL}/bookings/active-timelock`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        const data = await response.json();
+        return response.ok && data.success;
+    } catch (error) {
+        logger.error('Eroare la suspendarea TimeLock-ului:', error);
+        return false;
+    }
+}
+
 // Event Listeners optimizați cu debouncing pentru dată
 const debouncedDateChange = debounce(async function() {
     if (!domCache.dataProgramare) return;
@@ -605,12 +623,33 @@ function initializeApp() {
         });
     }
     
-    if (domCache.btnBackToStep2) {
-        domCache.btnBackToStep2.addEventListener('click', function() {
-            if (domCache.step3) domCache.step3.classList.remove('active');
-            if (domCache.step2) domCache.step2.classList.add('active');
-        });
-    }
+   if (domCache.btnBackToStep2) {
+    domCache.btnBackToStep2.addEventListener('click', async function() {
+        // Suspendă TimeLock-ul activ când utilizatorul se întoarce la pasul 2
+        logger.info('🔄 Utilizatorul s-a întors la pasul 2 - suspendăm TimeLock-ul activ...');
+        
+        const suspended = await suspendActiveTimeLock();
+        
+        if (suspended) {
+            logger.info('✅ TimeLock suspendat cu succes');
+        } else {
+            logger.warn('⚠️ Nu s-a putut suspenda TimeLock-ul, dar continuăm...');
+        }
+        
+        // Resetează ora selectată pentru UX
+        selectedTime = null;
+        
+        // Reîncarcă orele disponibile pentru a reflecta disponibilitatea actualizată
+        if (selectedServiceId && selectedDate) {
+            logger.info('🔄 Reîncărcăm orele disponibile după suspendarea TimeLock-ului...');
+            await incarcaOreDisponibile();
+        }
+        
+        // Navigația normală
+        if (domCache.step3) domCache.step3.classList.remove('active');
+        if (domCache.step2) domCache.step2.classList.add('active');
+    });
+}
     
     // Event listener pentru butonul X de închidere a popup-ului
     if (domCache.closeVerificationPopup) {
@@ -902,27 +941,43 @@ function initializeApp() {
                 logger.info('Răspuns completare rezervare:', data);
                 
                 if (data.success) {
-                    bookingId = data.bookingId;
-                    logger.info('ID Rezervare:', bookingId);
-                    
-                    // Resetează countdown-ul și starea butonului de retrimitere
-                    const retrimiteCodElement = document.getElementById('retrimiteCod');
-                    const countdownElement = document.getElementById('countdown');
-                    if (retrimiteCodElement) retrimiteCodElement.style.display = 'inline-block';
-                    if (countdownElement) countdownElement.style.display = 'none';
-                    clearInterval(countdownInterval);
-                    canResend = true;
-                    
-                    // Resetează inputul pentru cod de verificare
-                    if (domCache.codVerificareInput) domCache.codVerificareInput.value = '';
-                    
-                    // Afișare pop-up verificare email
-                    if (domCache.verificationPopup) domCache.verificationPopup.style.display = 'flex';
-                    
-                    showNotification('Un cod de verificare a fost trimis la adresa ta de email.', 'success');
-                } else {
-                    showNotification(data.message || 'A apărut o eroare la trimiterea codului de verificare.', 'error');
-                }
+                            bookingId = data.bookingId;
+                            logger.info('ID Rezervare:', bookingId);
+                            
+                            // Resetează countdown-ul și starea butonului de retrimitere
+                            const retrimiteCodElement = document.getElementById('retrimiteCod');
+                            const countdownElement = document.getElementById('countdown');
+                            if (retrimiteCodElement) retrimiteCodElement.style.display = 'inline-block';
+                            if (countdownElement) countdownElement.style.display = 'none';
+                            clearInterval(countdownInterval);
+                            canResend = true;
+                            
+                            
+                            if (domCache.codVerificareInput) domCache.codVerificareInput.value = '';
+                            
+                           
+                            if (domCache.verificationPopup) domCache.verificationPopup.style.display = 'flex';
+                            
+                            
+                            showNotification('Rezervare creată! Se trimite codul de verificare...', 'success');
+                            
+                            // FEEDBACK VIZUAL că email-ul se trimite
+                            setTimeout(() => {
+                                showNotification(' Verifică-ți inbox-ul pentru codul de verificare (codul se poate afla si in spam)', 'info');
+                            }, 3000);
+                        } else {
+                        //  Verifică dacă sesiunea a expirat
+                        if (data.message && data.message.includes('Sesiunea a expirat')) {
+                            showNotification('Sesiunea a expirat. Se reîncarcă pagina...', 'error');
+                            
+                            // Redirect automat după 3 secunde
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 3000);
+                        } else {
+                            showNotification(data.message || 'A apărut o eroare la trimiterea codului de verificare.', 'error');
+                        }
+                    }
             } catch (error) {
                 logger.error('Eroare la pasul 3:', error);
                 showNotification('A apărut o eroare la trimiterea codului de verificare. Te rugăm să încerci din nou.', 'error');
@@ -980,8 +1035,18 @@ function initializeApp() {
                     
                     logger.info('Rezervare confirmată:', bookingData);
                 } else {
-                    showNotification(data.message || 'Codul de verificare este incorect!', 'error');
-                }
+                        // Verifică dacă e eroare de sesiune expirată
+                        if (data.message && (data.message.includes('Sesiunea a expirat') || 
+                                        data.message.includes('Rezervarea nu a fost găsită'))) {
+                            showNotification('Sesiunea a expirat. Se reîncarcă pagina...', 'error');
+                            
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 3000);
+                        } else {
+                            showNotification(data.message || 'Codul de verificare este incorect!', 'error');
+                        }
+                    }
             } catch (error) {
                 logger.error('Eroare la verificarea codului:', error);
                 showNotification('A apărut o eroare la verificarea codului. Te rugăm să încerci din nou.', 'error');
