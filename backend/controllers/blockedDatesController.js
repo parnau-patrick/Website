@@ -201,6 +201,9 @@ const blockDate = async (req, res) => {
       existingBlock.reason = automaticReason;
       existingBlock.createdBy = req.user.id;
       await existingBlock.save();
+      const { invalidateCacheForDate } = require('../models/Booking');
+    invalidateCacheForDate(selectedDate);
+    logger.info(`🗑️ Cache invalidated after admin blocked hours - immediate update for clients`);
     } else {
       // Creează o nouă blocare
       existingBlock = new BlockedDate({
@@ -285,6 +288,9 @@ const unblockDate = async (req, res) => {
     const dateFormatted = BlockedDate.formatDateInRomanian(blockedDate.date);
     
     await BlockedDate.findByIdAndDelete(blockedDateId);
+    const { invalidateCacheForDate } = require('../models/Booking');
+    invalidateCacheForDate(blockedDate.date);
+    logger.info(`🗑️ Cache invalidated after admin unblocked date - immediate update for clients`);
     
     res.status(200).json({
       success: true,

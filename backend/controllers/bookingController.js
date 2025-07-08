@@ -1,5 +1,5 @@
 // controllers/bookingController.js
-const { Service, Booking, EmailUsage, generateAvailableTimeSlots } = require('../models/Booking');
+const { Service, Booking, EmailUsage, generateAvailableTimeSlots ,invalidateCacheForDate } = require('../models/Booking');
 const Client = require('../models/Client');
 const BlockedDate = require('../models/BlockedDates');
 const { runFullCleanup } = require('../utils/autoCleanup');
@@ -356,7 +356,10 @@ const createBooking = async (req, res) => {
         lockedBy: req.sessionID 
       });
       
-      await timeLock.save(); // Dacă altcineva are deja lock, va da eroare
+      await timeLock.save(); 
+
+      invalidateCacheForDate(selectedDate);
+      logger.info(`🗑️ Cache invalidated after TimeLock created for ${selectedDate.toISOString().split('T')[0]}`);  
       
     } catch (lockError) {
       if (lockError.code === 11000) { // Duplicate key error
@@ -366,14 +369,14 @@ const createBooking = async (req, res) => {
     }
     
     // Dacă ajunge aici, lock-ul a fost creat cu succes
-    // Store booking information in session to be od later
     if (req.session) {
       req.session.bookingData = {
         serviceId: parseInt(serviceId),
         date: selectedDate,
         time,
-        createdAt: new Date() // Add timestamp to track session freshness
+        createdAt: new Date() 
       };
+
       // Set a session timeout (default 15 min)
       req.session.bookingDataExpiry = Date.now() + (BOOKING_SESSION_TIMEOUT_MINS * 60 * 1000);
       req.session.save();

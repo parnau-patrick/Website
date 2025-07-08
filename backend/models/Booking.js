@@ -16,7 +16,7 @@ const logger = createContextLogger('BOOKING-MODEL');
 
 const slotsCache = new Map();
 const servicesCache = new Map();
-const CACHE_DURATION = 30000; 
+const CACHE_DURATION = 2000; 
 const SERVICES_CACHE_DURATION = 300000; 
 
 // Verifică dacă MONGO_URL este setat în producție
