@@ -481,52 +481,7 @@ const sendBookingConfirmationEmail = async (to, booking) => {
       };
     }
     
-    // Verifică dacă adresa a atins limita zilnică
-    const dailyLimitCheck = await checkDailyEmailLimit(to);
-    if (!dailyLimitCheck.success) {
-      return { 
-        success: false, 
-        error: dailyLimitCheck.message || 'Ai atins limita zilnică de email-uri'
-      };
-    }
-    
-    // Verifică dacă rezervarea a atins limita sa
-    if (booking._id) {
-      const bookingLimitCheck = await checkBookingEmailLimit(booking._id);
-      if (!bookingLimitCheck.success) {
-        return { 
-          success: false, 
-          error: bookingLimitCheck.message || 'Ai atins limita de email-uri pentru această rezervare'
-        };
-      }
-      
-      // Verifică timpul între email-uri
-      const fullBooking = await Booking.findById(booking._id);
-      if (fullBooking && fullBooking.lastEmailSentAt) {
-        const timeCheck = checkTimeBetweenEmails(fullBooking.lastEmailSentAt);
-        if (!timeCheck.canSend) {
-          return {
-            success: false,
-            error: timeCheck.message || `Te rugăm să aștepți încă ${timeCheck.secondsRemaining} secunde`,
-            secondsRemaining: timeCheck.secondsRemaining
-          };
-        }
-      }
-    }
-    
-    // Verifică și timpul ultimului email pentru client pentru rate limiting
-    const client = await Client.findByEmail(to);
-    if (client && client.lastEmailSentAt) {
-      const timeCheck = checkTimeBetweenEmails(client.lastEmailSentAt);
-      if (!timeCheck.canSend) {
-        return {
-          success: false,
-          error: timeCheck.message || `Te rugăm să aștepți încă ${timeCheck.secondsRemaining} secunde`,
-          secondsRemaining: timeCheck.secondsRemaining
-        };
-      }
-    }
-    
+
     // Formatează data pentru email
     let formattedDate = '';
     try {

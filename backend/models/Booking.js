@@ -16,7 +16,7 @@ const logger = createContextLogger('BOOKING-MODEL');
 
 const slotsCache = new Map();
 const servicesCache = new Map();
-const CACHE_DURATION = 2000; 
+const CACHE_DURATION = 1000; 
 const SERVICES_CACHE_DURATION = 300000; 
 
 // Verifică dacă MONGO_URL este setat în producție
@@ -429,9 +429,11 @@ const generateAvailableTimeSlots = async (date, duration) => {
       
       // Query 4: Toate orele blocate specific pentru ziua respectivă
       BlockedDate.find({
-        date: dateStart,
-        type: 'specificTime'
-      }).lean().limit(50) 
+            date: {
+                $gte: dateStart,
+                $lt: dateEnd
+            }
+        }).lean().limit(50)
     ]);
 
     // OPTIMIZARE 6: Pre-procesare date pentru căutare rapidă
@@ -485,16 +487,23 @@ const generateAvailableTimeSlots = async (date, duration) => {
     });
     
     // Adaugă orele blocate specific
-    const blockedTimeSet = new Set();
-    blockedTimes.forEach(blocked => {
-      if (blocked.times && Array.isArray(blocked.times)) {
-        blocked.times.forEach(time => {
-          if (typeof time === 'string' && /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
-            blockedTimeSet.add(time);
-          }
-        });
-      }
-    });
+      const blockedTimeSet = new Set();
+      blockedTimes.forEach(blocked => {
+        if (blocked.isFullDayBlocked) {
+          // Dacă ziua e blocată complet, marchează toate orele ca blocate
+          allPossibleSlots.forEach(slot => {
+            blockedTimeSet.add(slot.time);
+          });
+          logger.info(` Toată ziua este blocată`);
+        } else if (blocked.blockedHours && Array.isArray(blocked.blockedHours)) { 
+          blocked.blockedHours.forEach(time => {                                   
+            if (typeof time === 'string' && /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
+              blockedTimeSet.add(time);
+              logger.info(` Ora ${time} este blocată`);
+            }
+          });
+        }
+      });
 
     // OPTIMIZARE 7: Verificare rapidă pentru disponibilitate
     const availableSlots = allPossibleSlots.filter(slot => {

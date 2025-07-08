@@ -464,28 +464,37 @@ const resendVerificationCode = async (req, res) => {
     
     // Generate new verification code
     const verificationCode = generateVerificationCode();
-    
-    // Trimite email-ul
-    const emailResult = await sendVerificationEmail(booking.email, verificationCode, bookingId);
-    
-    if (!emailResult.success) {
-      return errorResponse(res, 500, emailResult.error || 'Nu s-a putut trimite codul de verificare. Vă rugăm să încercați mai târziu.');
-    }
-    
-    // Update booking cu noul cod și actualizează timestamp
-    booking.verificationCode = verificationCode;
-    booking.lastEmailSentAt = new Date();
-    await booking.save();
-    
-    // Update client email stats
-    if (booking.client) {
-      await booking.client.incrementEmailCounter();
-    }
-    
-    res.status(200).json({ 
-      success: true, 
-      message: 'Un nou cod de verificare a fost trimis'
-    });
+
+    // Update booking cu noul cod ÎNAINTE de email
+        booking.verificationCode = verificationCode;
+        await booking.save();
+
+        // RĂSPUNDE IMEDIAT (nu mai așteaptă email-ul)
+        res.status(200).json({ 
+          success: true, 
+          message: 'Se retrimite codul de verificare...'
+        });
+
+        
+        setImmediate(async () => {
+          try {
+            logger.info(`🔄 Retrimitem email asincron pentru booking ${booking._id}...`);
+            
+            const emailResult = await sendVerificationEmail(booking.email, verificationCode, bookingId);
+            
+            if (emailResult.success) {
+              logger.info(`✅ Email retrimis cu succes pentru booking ${booking._id}`);
+              // Update client email counter
+              if (booking.client) {
+                await booking.client.incrementEmailCounter();
+              }
+            } else {
+              logger.error(`❌ Email de retrimitere eșuat pentru booking ${booking._id}:`, emailResult.error);
+            }
+          } catch (asyncEmailError) {
+            logger.error(`💥 Eroare la email asincron de retrimitere pentru booking ${booking._id}:`, asyncEmailError);
+          }
+        });
   } catch (error) {
     logger.error('Error resending verification code:', error);
     return errorResponse(res, 500, 'Eroare la retrimiterea codului de verificare');
@@ -941,38 +950,43 @@ const confirmBooking = async (req, res) => {
       });
     }
     
-    // Send confirmation email
-    const emailResult = await sendBookingConfirmationEmail(booking.email, {
-      _id: booking._id,
-      clientName: booking.clientName,
-      serviceName: service.name,
-      date: booking.date,
-      time: booking.time
-    });
-    
-    // Update booking status regardless of email success
+        // Update booking status IMEDIAT
     booking.status = 'confirmed';
     await booking.save();
-    
-    // Update client email counter if email was successful
-    if (emailResult.success && booking.client) {
-      await booking.client.incrementEmailCounter();
-    }
-    
-    if (!emailResult.success) {
-     return res.status(200).json({ 
-       success: true,
-       message: 'Rezervare confirmată, dar nu s-a putut trimite email de confirmare',
-       emailStatus: 'failed',
-       emailError: emailResult.error
-     });
-   }
-   
-   res.status(200).json({ 
-     success: true, 
-     message: 'Rezervare confirmată și email de confirmare trimis',
-     emailStatus: 'sent'
-   });
+
+    // RĂSPUNDE IMEDIAT la admin
+    res.status(200).json({ 
+      success: true, 
+      message: 'Rezervare confirmată! Se trimite email-ul de confirmare...',
+      emailStatus: 'sending'
+    });
+
+    // TRIMITE EMAIL ASINCRON în background
+    setImmediate(async () => {
+      try {
+        logger.info(`📧 Trimitem email de confirmare asincron pentru booking ${booking._id}...`);
+        
+        const emailResult = await sendBookingConfirmationEmail(booking.email, {
+          _id: booking._id,
+          clientName: booking.clientName,
+          serviceName: service.name,
+          date: booking.date,
+          time: booking.time
+        });
+        
+        if (emailResult.success) {
+          logger.info(`✅ Email de confirmare trimis cu succes pentru ${booking.email}`);
+          if (booking.client) {
+            await booking.client.incrementEmailCounter();
+          }
+        } else {
+          logger.error(`❌ Email de confirmare eșuat pentru ${booking.email}:`, emailResult.error);
+        }
+        
+      } catch (asyncEmailError) {
+        logger.error(`💥 Eroare la email asincron de confirmare pentru booking ${booking._id}:`, asyncEmailError);
+      }
+    });
  } catch (error) {
    logger.error('Error confirming booking:', error);
    return errorResponse(res, 500, 'Eroare la confirmarea rezervării');
@@ -1029,38 +1043,43 @@ const declineBooking = async (req, res) => {
      });
    }
    
-   // Send rejection email
-   const emailResult = await sendBookingRejectionEmail(booking.email, {
-     _id: booking._id,
-     serviceName: service.name,
-     clientName: booking.clientName,
-     date: booking.date,
-     time: booking.time
-   });
-   
-   // Update booking status regardless of email success
-   booking.status = 'declined';
-   await booking.save();
-   
-   // Update client email counter if email was successful
-   if (emailResult.success && booking.client) {
-     await booking.client.incrementEmailCounter();
-   }
-   
-   if (!emailResult.success) {
-     return res.status(200).json({ 
-       success: true,
-       message: 'Rezervare respinsă, dar nu s-a putut trimite email de notificare',
-       emailStatus: 'failed',
-       emailError: emailResult.error
-     });
-   }
-   
-   res.status(200).json({ 
-     success: true, 
-     message: 'Rezervare respinsă și email de notificare trimis',
-     emailStatus: 'sent'
-   });
+      // Update booking status IMEDIAT
+    booking.status = 'declined';
+    await booking.save();
+
+    // RĂSPUNDE IMEDIAT la admin
+    res.status(200).json({ 
+      success: true, 
+      message: 'Rezervare respinsă! Se trimite email-ul de notificare...',
+      emailStatus: 'sending'
+    });
+
+    // TRIMITE EMAIL ASINCRON în background
+    setImmediate(async () => {
+      try {
+        logger.info(`📧 Trimitem email de respingere asincron pentru booking ${booking._id}...`);
+        
+        const emailResult = await sendBookingRejectionEmail(booking.email, {
+          _id: booking._id,
+          serviceName: service.name,
+          clientName: booking.clientName,
+          date: booking.date,
+          time: booking.time
+        });
+        
+        if (emailResult.success) {
+          logger.info(`✅ Email de respingere trimis cu succes pentru ${booking.email}`);
+          if (booking.client) {
+            await booking.client.incrementEmailCounter();
+          }
+        } else {
+          logger.error(`❌ Email de respingere eșuat pentru ${booking.email}:`, emailResult.error);
+        }
+        
+      } catch (asyncEmailError) {
+        logger.error(`💥 Eroare la email asincron de respingere pentru booking ${booking._id}:`, asyncEmailError);
+      }
+    });
  } catch (error) {
    logger.error('Error declining booking:', error);
    return errorResponse(res, 500, 'Eroare la respingerea rezervării');
@@ -1083,25 +1102,6 @@ const blockUser = async (req, res) => {
    
    if (!booking) {
      return errorResponse(res, 404, 'Rezervarea nu a fost găsită');
-   }
-   
-   // Block client in the client model
-   if (booking.client) {
-     await booking.client.block(reason || 'No reason provided');
-   } else {
-     // If for some reason the client reference is missing, try to find/create the client
-     let client = await Client.findByEmail(booking.email);
-     
-     if (!client) {
-       client = new Client({
-         name: booking.clientName,
-         phoneNumber: booking.phoneNumber,
-         email: booking.email,
-         countryCode: booking.countryCode || '+40'
-       });
-     }
-     
-     await client.block(reason || 'No reason provided');
    }
    
    // Verifică limitele de email înainte de a trimite notificarea
@@ -1145,30 +1145,62 @@ const blockUser = async (req, res) => {
      });
    }
    
-   // Trimite email utilizatorului că a fost blocat
-   const emailResult = await sendUserBlockedEmail(booking.email, {
-     name: booking.clientName,
-     phoneNumber: booking.phoneNumber,
-     email: booking.email
-   }, reason);
-   
-   // Decline the booking regardless of email status
-   booking.status = 'declined';
-   await booking.save();
-   
-   // Update client email counter if email was successful
-   if (emailResult.success && booking.client) {
-     await booking.client.incrementEmailCounter();
-   }
-   
-   res.status(200).json({ 
-     success: true, 
-     message: 'Utilizator blocat și rezervare respinsă',
-     emailStatus: emailResult.success ? 'sent' : 'failed',
-     email: booking.email,
-     phoneNumber: booking.phoneNumber,
-     clientId: booking.client ? booking.client._id : null
-   });
+      // Block client și decline booking IMEDIAT
+    if (booking.client) {
+      await booking.client.block(reason || 'No reason provided');
+    } else {
+      // Găsește/creează client și blochează
+      let client = await Client.findByEmail(booking.email);
+      if (!client) {
+        client = new Client({
+          name: booking.clientName,
+          phoneNumber: booking.phoneNumber,
+          email: booking.email,
+          countryCode: booking.countryCode || '+40'
+        });
+      }
+      await client.block(reason || 'No reason provided');
+    }
+
+    // Decline booking IMEDIAT
+    booking.status = 'declined';
+    await booking.save();
+
+    // RĂSPUNDE IMEDIAT la admin
+    res.status(200).json({ 
+      success: true, 
+      message: 'Utilizator blocat și rezervare respinsă! Se trimite email-ul de notificare...',
+      emailStatus: 'sending',
+      email: booking.email,
+      phoneNumber: booking.phoneNumber,
+      clientId: booking.client ? booking.client._id : null
+    });
+
+    // TRIMITE EMAIL ASINCRON în background
+    setImmediate(async () => {
+      try {
+        logger.info(`🚫 Trimitem email de blocare asincron pentru ${booking.email}...`);
+        
+        const emailResult = await sendUserBlockedEmail(booking.email, {
+          name: booking.clientName,
+          phoneNumber: booking.phoneNumber,
+          email: booking.email
+        }, reason);
+        
+        if (emailResult.success) {
+          logger.info(`✅ Email de blocare trimis cu succes pentru ${booking.email}`);
+          // Update client email counter
+          if (booking.client) {
+            await booking.client.incrementEmailCounter();
+          }
+        } else {
+          logger.error(`❌ Email de blocare eșuat pentru ${booking.email}:`, emailResult.error);
+        }
+        
+      } catch (asyncEmailError) {
+        logger.error(`💥 Eroare la email asincron de blocare pentru ${booking.email}:`, asyncEmailError);
+      }
+    });
  } catch (error) {
    logger.error('Error blocking user:', error);
    return errorResponse(res, 500, 'Eroare la blocarea utilizatorului');
