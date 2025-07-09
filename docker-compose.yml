@@ -10,7 +10,7 @@ services:
     environment:
       - TZ=Europe/Bucharest
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"
     networks:
       - barbershop-network
     restart: unless-stopped
@@ -32,7 +32,7 @@ services:
     environment:
       - TZ=Europe/Bucharest
     ports:
-      - "80:80"
+      - "127.0.0.1:8080:80"
     depends_on:
       - backend
     networks:
