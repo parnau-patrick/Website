@@ -1,47 +1,125 @@
 
+
 services:
+  # Backend Service
   backend:
     build:
       context: .
       dockerfile: backend.Dockerfile
     container_name: barbershop_backend
+    restart: unless-stopped
     env_file:
       - backend/.env
     environment:
+      - NODE_ENV=production
       - TZ=Europe/Bucharest
-    ports:
-      - "127.0.0.1:5000:5000"
+    # IMPORTANT: Nu expunem portul 5000 în exterior, doar în rețeaua Docker
+    expose:
+      - "5000"
     networks:
       - barbershop-network
-    restart: unless-stopped
     volumes:
+      - backend_logs:/app/logs
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:5000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1))"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    depends_on:
+      - mongo
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
+  # Frontend/Nginx Service
   frontend:
     build:
       context: .
       dockerfile: frontend.Dockerfile
     container_name: barbershop_frontend
+    restart: unless-stopped
     environment:
       - TZ=Europe/Bucharest
+    # Expunem porturile 80 și 443 pentru HTTP și HTTPS
     ports:
-      - "127.0.0.1:8080:80"
+      - "80:80"
+      - "443:443"
     depends_on:
       - backend
     networks:
       - barbershop-network
-    restart: unless-stopped
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
+      # Volume pentru certificatele SSL
+      - letsencrypt_certs:/etc/letsencrypt:ro
+      - letsencrypt_www:/var/www/certbot
+      - nginx_logs:/var/log/nginx
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+  # MongoDB Service (opțional, dacă vrei baza de date locală)
+  mongo:
+    image: mongo:7-jammy
+    container_name: barbershop_mongo
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - TZ=Europe/Bucharest
+    expose:
+      - "27017"
+    networks:
+      - barbershop-network
+    volumes:
+      - mongo_data:/data/db
+      - mongo_config:/data/configdb
+      - /etc/localtime:/etc/localtime:ro
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # Certbot pentru SSL (Let's Encrypt)
+  certbot:
+    image: certbot/certbot:latest
+    container_name: barbershop_certbot
+    volumes:
+      - letsencrypt_certs:/etc/letsencrypt
+      - letsencrypt_www:/var/www/certbot
+    # Rulează doar când e necesar (nu ca serviciu permanent)
+    profiles:
+      - ssl
 
 networks:
   barbershop-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  mongo_data:
+    driver: local
+  mongo_config:
+    driver: local
+  backend_logs:
+    driver: local
+  nginx_logs:
+    driver: local
+  letsencrypt_certs:
+    driver: local
+  letsencrypt_www:
+    driver: local

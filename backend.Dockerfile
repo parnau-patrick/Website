@@ -1,23 +1,31 @@
-FROM node:18-alpine
+# Backend Dockerfile pentru producție
+FROM node:18-alpine AS base
 
-# Adaugă utilizator non-root pentru securitate
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S backend -u 1001
+# Instalează dependențele de sistem necesare
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    ca-certificates
+
+# Creează utilizator non-root pentru securitate
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S backend -u 1001 -G nodejs
 
 # Setează directorul de lucru
 WORKDIR /app
 
-# Copiază package files pentru cache-ing mai bun
+# Copiază și instalează dependențele
 COPY backend/package*.json ./
-
-# Instalează dependențele (inclusiv dev dependencies pentru rebuild)
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --only=production --no-audit --no-fund && \
+    npm cache clean --force
 
 # Copiază codul sursă
 COPY backend/ .
 
-# Creează directorul logs cu permisiuni corecte
-RUN mkdir -p logs && chown -R backend:nodejs logs && chmod 755 logs
+# Creează directoare necesare cu permisiuni corecte
+RUN mkdir -p logs temp uploads && \
+    chown -R backend:nodejs . && \
+    chmod 755 logs temp
 
 # Schimbă la utilizatorul non-root
 USER backend
@@ -25,9 +33,12 @@ USER backend
 # Expune portul
 EXPOSE 5000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "const http=require('http');const req=http.request('http://localhost:5000/health',(res)=>{process.exit(res.statusCode===200?0:1)});req.on('error',()=>process.exit(1));req.end();"
+# Health check îmbunătățit
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
+
+# Folosește dumb-init pentru semnale de proces corecte
+ENTRYPOINT ["dumb-init", "--"]
 
 # Comandă de start
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
