@@ -102,7 +102,7 @@ if [ -d "$APP_DIR/.git" ]; then
     git pull origin main
 else
     log_info "📥 Clonează codul..."
-    git clone https://github.com/parnau-patrick/Website/tree/main $APP_DIR
+    git clone https://github.com/parnau-patrick/Website $APP_DIR
     cd $APP_DIR
 fi
 
