@@ -372,14 +372,47 @@ const csrfProtection = csrf({
   }
 });
 
-app.get('/api/csrf-token', csrfProtection, (req, res) => {
+app.get('/api/csrf-token', (req, res) => {
   try {
-    res.json({
-      success: true,
-      csrfToken: req.csrfToken()
+    // Inițializează CSRF middleware doar pentru acest endpoint
+    csrfProtection(req, res, (err) => {
+      if (err) {
+        logger.error('Error initializing CSRF for token endpoint:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Could not generate CSRF token'
+        });
+      }
+      
+      try {
+        // Acum req.csrfToken() este disponibil
+        const token = req.csrfToken();
+        
+        if (!token) {
+          logger.error('CSRF token is null or undefined');
+          return res.status(500).json({
+            success: false,
+            message: 'Could not generate CSRF token'
+          });
+        }
+        
+        logger.info('CSRF token generated successfully');
+        res.json({
+          success: true,
+          csrfToken: token
+        });
+        
+      } catch (tokenError) {
+        logger.error('Error getting CSRF token:', tokenError);
+        res.status(500).json({
+          success: false,
+          message: 'Could not generate CSRF token'
+        });
+      }
     });
+    
   } catch (error) {
-    logger.error('Error generating CSRF token:', error);
+    logger.error('Error in CSRF token endpoint:', error);
     res.status(500).json({
       success: false,
       message: 'Could not generate CSRF token'
@@ -399,7 +432,7 @@ const requireCSRF = (req, res, next) => {
   }
   
   // Skip CSRF pentru obținerea token-ului
-  if (req.path === '/api/csrf-token') {
+  if (req.path === '/csrf-token' || req.originalUrl === '/api/csrf-token') {
     return next();
   }
   

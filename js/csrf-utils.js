@@ -48,7 +48,6 @@ class CSRFManager {
                 throw new Error('Invalid CSRF token response');
             }
         } catch (error) {
-            console.error('❌ Eroare la obținerea token-ului CSRF:', error);
             throw error;
         }
     }
@@ -59,7 +58,6 @@ class CSRFManager {
             try {
                 await this.getCSRFToken();
             } catch (error) {
-                console.error('Nu s-a putut obține token-ul CSRF:', error);
                 throw error;
             }
         }
@@ -83,7 +81,6 @@ class CSRFManager {
                 const errorData = await response.json().catch(() => ({}));
                 
                 if (errorData.code === 'CSRF_INVALID') {
-                    console.log('🔄 Token CSRF invalid, reîmprospătez...');
                     
                     // Resetează token-ul și încearcă din nou
                     this.token = null;
@@ -106,7 +103,6 @@ class CSRFManager {
 
             return response;
         } catch (error) {
-            console.error('Eroare la cererea cu CSRF:', error);
             throw error;
         }
     }
