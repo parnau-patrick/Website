@@ -11,6 +11,7 @@ const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
+const csrf = require('csurf');
 
 // Import routes and middleware
 const bookingRoutes = require('./routes/reservationRoutes');
@@ -120,6 +121,14 @@ app.use(compression({
     return compression.filter(req, res);
   }
 }));
+
+const csrfProtection = csrf({
+  cookie: {
+    httpOnly: true,
+    secure: NODE_ENV === 'production' && process.env.FORCE_HTTPS === 'true',
+    sameSite: NODE_ENV === 'production' ? 'strict' : 'lax'
+  }
+});
 
 
 

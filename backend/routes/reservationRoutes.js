@@ -36,7 +36,7 @@ router.delete(
   blockedDatesController.unblockDate
 );
 
-// Verifică dacă o dată/oră este blocată (endpoint public pentru frontend)
+// Verifică dacă o dată/oră este blocată 
 router.get(
   '/check-blocked-date',
   validationMiddleware.sanitizeInputs,
