@@ -5,7 +5,6 @@ const bookingController = require('../controllers/bookingController');
 const validationMiddleware = require('../middleware/validationMiddleware');
 const { authenticateJWT, authorizeRole } = require('../middleware/authMiddleware');
 const blockedDatesController = require('../controllers/blockedDatesController');
-
 // Middleware de sanitizare globală pentru toate rutele
 router.use(validationMiddleware.sanitizeInputs);
 

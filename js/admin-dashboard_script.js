@@ -362,16 +362,36 @@ async function fetchWithAuth(url, options = {}) {
     };
     
     try {
-        const response = await fetch(url, authOptions);
-        
-        if (response.status === 401 || response.status === 403) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('tokenTimestamp');
-            window.location.href = 'login.html';
-            return null;
+        // Pentru GET requests, folosește fetch normal
+        if (options.method === 'GET' || !options.method) {
+            const response = await fetch(url, authOptions);
+            
+            if (response.status === 401 || response.status === 403) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('tokenTimestamp');
+                window.location.href = 'login.html';
+                return null;
+            }
+            
+            return response;
+        } else {
+            // Pentru POST/PUT/DELETE requests, folosește CSRF
+            const response = await window.csrfManager.fetchWithCSRF(url, authOptions);
+            
+            if (response.status === 401 || response.status === 403) {
+                const errorData = await response.json().catch(() => ({}));
+                
+                // Dacă nu e eroare CSRF, atunci e eroare de autentificare
+                if (errorData.code !== 'CSRF_INVALID') {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('tokenTimestamp');
+                    window.location.href = 'login.html';
+                    return null;
+                }
+            }
+            
+            return response;
         }
-        
-        return response;
     } catch (error) {
         logger.error('Network error:', error);
         showToast('Eroare de rețea. Verificați conexiunea.', false);

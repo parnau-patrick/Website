@@ -25,6 +25,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET;
 const MONGO_URL = process.env.MONGO_URL;
 const NODE_ENV = process.env.NODE_ENV || 'production';
 const PORT = process.env.PORT || 5000;
+const SESSION_EXPIRY = 24 * 60 * 60 * 1000;
 
 let cleanupInterval;
 const startAutoCleanup = () => {
@@ -122,15 +123,6 @@ app.use(compression({
   }
 }));
 
-const csrfProtection = csrf({
-  cookie: {
-    httpOnly: true,
-    secure: NODE_ENV === 'production' && process.env.FORCE_HTTPS === 'true',
-    sameSite: NODE_ENV === 'production' ? 'strict' : 'lax'
-  }
-});
-
-
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -214,7 +206,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token']
 }));
 
 // Production-optimized rate limiting
@@ -347,8 +339,7 @@ app.use(express.static(path.join(__dirname, '..'), {
   index: ['index.html', 'programare.html']
 }));
 
-// Session configuration with production settings
-const SESSION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+
 
 app.use(session({
   secret: SESSION_SECRET,
@@ -371,6 +362,63 @@ app.use(session({
     sameSite: NODE_ENV === 'production' ? 'strict' : 'lax'
   }
 }));
+
+const csrfProtection = csrf({
+  value: function (req) {
+    return (req.body && req.body._csrf) || 
+           (req.query && req.query._csrf) || 
+           (req.headers && req.headers['x-csrf-token']) ||
+           (req.headers && req.headers['x-xsrf-token']);
+  }
+});
+
+app.get('/api/csrf-token', csrfProtection, (req, res) => {
+  try {
+    res.json({
+      success: true,
+      csrfToken: req.csrfToken()
+    });
+  } catch (error) {
+    logger.error('Error generating CSRF token:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Could not generate CSRF token'
+    });
+  }
+});
+
+const requireCSRF = (req, res, next) => {
+  // Skip CSRF pentru GET requests care sunt safe
+  if (req.method === 'GET') {
+    return next();
+  }
+  
+  // Skip CSRF pentru health check
+  if (req.path === '/health') {
+    return next();
+  }
+  
+  // Skip CSRF pentru obținerea token-ului
+  if (req.path === '/api/csrf-token') {
+    return next();
+  }
+  
+  // Aplică CSRF protection
+  csrfProtection(req, res, next);
+};
+
+const handleCSRFError = (err, req, res, next) => {
+  if (err.code === 'EBADCSRFTOKEN') {
+    logger.warn(`CSRF token invalid pentru ${req.ip} - ${req.method} ${req.path}`);
+    return res.status(403).json({
+      success: false,
+      message: 'Invalid CSRF token. Please refresh the page and try again.',
+      code: 'CSRF_INVALID'
+    });
+  }
+  next(err);
+};
+
 
 // Enhanced login endpoint with security measures
 app.post('/api/login', async (req, res) => {
@@ -529,7 +577,7 @@ app.get('/api/admin/cleanup-status', authenticateJWT, async (req, res) => {
 });
 
 // API Routes
-app.use('/api', bookingRoutes);
+app.use('/api', requireCSRF, bookingRoutes);
 
 // Debug routes with proper security
 if (NODE_ENV === 'development') {
@@ -599,6 +647,8 @@ app.use((req, res, next) => {
   
   next();
 });
+
+app.use(handleCSRFError);
 
 // 404 handler with logging
 app.use((req, res) => {

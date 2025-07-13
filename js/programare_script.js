@@ -246,11 +246,10 @@ async function suspendReservation() {
     try {
         logger.info('Suspendăm rezervarea:', bookingId);
         
-        const response = await fetch(`${API_URL}/bookings/${bookingId}/suspend`, {
+        const response = await window.csrfManager.fetchWithCSRF(`${API_URL}/bookings/${bookingId}/suspend`, {
             method: 'PUT',
             headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
+                'Content-Type': 'application/json'
             }
         });
         
@@ -385,17 +384,16 @@ async function incarcaOreDisponibile() {
     try {
         logger.info(`Încărcăm orele disponibile pentru: serviceId=${selectedServiceId}, date=${selectedDate}`);
         
-        const response = await fetch(`${API_URL}/available-time-slots`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-                serviceId: parseInt(selectedServiceId),
-                date: selectedDate
-            })
-        });
+        const response = await window.csrfManager.fetchWithCSRF(`${API_URL}/available-time-slots`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    serviceId: parseInt(selectedServiceId),
+                    date: selectedDate
+                })
+            });
         
         logger.info('Status răspuns de la server:', response.status);
         
@@ -467,17 +465,16 @@ async function verifyTimeSlotStillAvailable(selectedTime) {
     try {
         logger.info(` Verificăm dacă ora ${selectedTime} mai este disponibilă...`);
         
-        const response = await fetch(`${API_URL}/available-time-slots`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-                serviceId: parseInt(selectedServiceId),
-                date: selectedDate
-            })
-        });
+            const response = await window.csrfManager.fetchWithCSRF(`${API_URL}/available-time-slots`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    serviceId: parseInt(selectedServiceId),
+                    date: selectedDate
+                })
+            });
         
         if (!response.ok) {
             logger.error('Eroare la verificarea orei:', response.status);
@@ -503,13 +500,12 @@ async function verifyTimeSlotStillAvailable(selectedTime) {
 
 async function suspendActiveTimeLock() {
     try {
-        const response = await fetch(`${API_URL}/bookings/active-timelock`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
+        const response = await window.csrfManager.fetchWithCSRF(`${API_URL}/bookings/active-timelock`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
         
         const data = await response.json();
         return response.ok && data.success;
@@ -764,11 +760,10 @@ function initializeApp() {
             logger.info('📡 Trimitem cerere pentru rezervarea orei...');
             
             // Cerere directă la API pentru rezervarea orei
-            const response = await fetch(`${API_URL}/bookings`, {
+            const response = await window.csrfManager.fetchWithCSRF(`${API_URL}/bookings`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     serviceId: parseInt(selectedServiceId),
@@ -920,11 +915,10 @@ function initializeApp() {
 
             try {
                 logger.info('Trimitem cerere pentru completarea rezervării...');
-                const response = await fetch(`${API_URL}/bookings/complete`, {
+                const response = await window.csrfManager.fetchWithCSRF(`${API_URL}/bookings/complete`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         clientName: numeComplet,
@@ -1004,11 +998,10 @@ function initializeApp() {
 
             try {
                 logger.info('Trimitem cerere pentru verificarea codului...');
-                const response = await fetch(`${API_URL}/bookings/verify`, {
+                const response = await window.csrfManager.fetchWithCSRF(`${API_URL}/bookings/verify`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         bookingId: bookingId,
@@ -1065,11 +1058,10 @@ function initializeApp() {
 
             try {
                 logger.info('Trimitem cerere pentru retrimitere cod...');
-                const response = await fetch(`${API_URL}/bookings/resend-code`, {
+                const response = await window.csrfManager.fetchWithCSRF(`${API_URL}/bookings/resend-code`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         bookingId: bookingId

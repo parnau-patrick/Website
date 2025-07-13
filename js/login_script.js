@@ -51,14 +51,14 @@
                 
                 try {
                     // Send login request
-                    const response = await fetch(`${API_URL}/login`, {
+                    const response = await window.csrfManager.fetchWithCSRF(`${API_URL}/login`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({ username, password })
                     });
-                    
+                                        
                     let data;
                     try {
                         data = await response.json();
