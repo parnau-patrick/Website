@@ -55,7 +55,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
       # Volume pentru certificatele SSL
-      - letsencrypt_certs:/etc/letsencrypt:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
       - letsencrypt_www:/var/www/certbot
       - nginx_logs:/var/log/nginx
     deploy:
