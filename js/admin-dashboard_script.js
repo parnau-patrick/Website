@@ -399,7 +399,6 @@ async function fetchWithAuth(url, options = {}) {
     }
 }
 
-// FUNCȚII OPTIMIZATE - Load bookings cu batch processing
 
 // OPTIMIZATĂ - Load pending reservations
 async function loadPendingBookings() {
@@ -1181,9 +1180,9 @@ function checkIfDateAlreadyBlocked(selectedDate, isFullDay, selectedHours = []) 
     }
 }
 
-// Setup all event listeners - OPTIMIZAT
+
 function setupEventListeners() {
-    // Optimizare: event listener unic pentru data picker cu debouncing
+   
     if (domCache.datePicker) {
         const debouncedDateChange = debounce('datePicker', () => {
             loadConfirmedBookings(domCache.datePicker.value);
@@ -1229,12 +1228,12 @@ function setupEventListeners() {
         });
     }
 
-    // Setup block popup event listeners
+    
     setupBlockPopupListeners();
     setupBlockDateListeners();
 }
 
-// Setup block popup event listeners - OPTIMIZAT
+
 function setupBlockPopupListeners() {
     if (domCache.blockPopupClose) {
         domCache.blockPopupClose.addEventListener('click', hideBlockPopup);
