@@ -934,3 +934,108 @@ body {
 .toast.error {
     border-left: 5px solid #F44336;
 }
+/* Stiluri pentru slot-urile disponibile MINI - Foarte mici, UNU SUB ALTUL */
+.available-slot-card-mini {
+    background-color: rgba(26, 26, 26, 0.4) !important;
+    border: 1px solid #4a5568 !important;
+    opacity: 0.6;
+    padding: 4px 8px !important; /* Foarte mic padding */
+    margin-bottom: 4px !important; /* Spațiu foarte mic între ele */
+    min-height: auto !important;
+    border-radius: 3px !important;
+    display: block !important; /* Block pentru a fi unu sub altul */
+    width: 100% !important; /* Lățime completă */
+}
+
+.available-slot-card-mini:hover {
+    opacity: 0.8;
+    transform: translateX(2px);
+    transition: all 0.15s ease;
+}
+
+.available-time-mini {
+    color: #81c784 !important;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem !important; /* Foarte mic text */
+    letter-spacing: 0.5px;
+    text-align: left !important; /* Aliniere la stânga */
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.available-time-mini::after {
+    content: ' -----';
+    color: #555;
+    font-size: 0.7rem;
+}
+
+/* Stiluri VECHI pentru cardurile mari (dacă mai sunt folosite) */
+.available-slot-card {
+    background-color: rgba(26, 26, 26, 0.7) !important;
+    border: 1px solid #4a5568 !important;
+    opacity: 0.8;
+}
+
+.available-slot-card:hover {
+    opacity: 1;
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+.available-time {
+    color: #81c784 !important;
+    font-family: 'Courier New', monospace;
+    font-size: 1.1rem !important;
+    letter-spacing: 1px;
+}
+
+.status-available {
+    background-color: rgba(129, 199, 132, 0.2) !important;
+    color: #81c784 !important;
+    border: 1px solid #81c784;
+}
+
+/* Îmbunătățire pentru diferențiere vizuală */
+.available-slot-card .card-header {
+    padding: 15px;
+    border-bottom: 1px solid #4a5568;
+    background: linear-gradient(90deg, rgba(129, 199, 132, 0.05), transparent);
+}
+
+/* Container pentru cardurile mini să stea UNU SUB ALTUL */
+.cards-container .available-slot-card-mini {
+    width: 100% !important;
+    flex: none !important;
+    display: block !important;
+}
+
+/* Responsivitate pentru slot-urile disponibile */
+@media (max-width: 768px) {
+    .available-time {
+        font-size: 1rem !important;
+    }
+    
+    .available-time-mini {
+        font-size: 0.7rem !important;
+    }
+    
+    .available-slot-card-mini {
+        padding: 3px 6px !important;
+    }
+}
+
+/* Animație subtilă pentru slot-urile disponibile */
+.available-slot-card, .available-slot-card-mini {
+    animation: fadeInSlot 0.3s ease-in;
+}
+
+@keyframes fadeInSlot {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 0.6;
+        transform: translateY(0);
+    }
+}

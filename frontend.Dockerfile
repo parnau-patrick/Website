@@ -28,9 +28,6 @@ RUN mkdir -p /var/www/certbot /var/log/nginx/cache
 RUN chown -R nginx:nginx /usr/share/nginx/html /var/www/certbot && \
     chmod -R 755 /usr/share/nginx/html
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:80/health || exit 1
 
 # Expune porturile
 EXPOSE 80 443

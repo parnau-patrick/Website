@@ -11,7 +11,7 @@ services:
     environment:
       - NODE_ENV=production
       - TZ=Europe/Bucharest
-    # IMPORTANT: Nu expunem portul 5000 în exterior, doar în rețeaua Docker
+    
     expose:
       - "5000"
     networks:
@@ -26,7 +26,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    # ELIMINAT: depends_on mongo (nu mai avem MongoDB local)
     deploy:
       resources:
         limits:

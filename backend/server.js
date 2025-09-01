@@ -104,6 +104,9 @@ connect()
 // HTTPS redirect middleware for production
 if (NODE_ENV === 'production' && process.env.FORCE_HTTPS === 'true') {
   app.use((req, res, next) => {
+    if (req.path === '/health') {
+      return next();
+    }
     if (req.headers['x-forwarded-proto'] !== 'https') {
       return res.redirect(301, `https://${req.header('host')}${req.url}`);
     }

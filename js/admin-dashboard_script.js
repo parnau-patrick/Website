@@ -242,11 +242,23 @@ function hideBlockPopup() {
     }
 }
 
-// FUNCȚIE OPTIMIZATĂ - Create card for booking cu DocumentFragment
-function createCard(booking, type = 'pending') {
+// FUNCȚIE OPTIMIZATĂ - Create card for booking sau available slot cu DocumentFragment
+function createCard(item, type = 'pending') {
     // Utilizează DocumentFragment pentru performanță optimă
     const fragment = document.createDocumentFragment();
     const card = document.createElement('div');
+    
+    // NOU: Verifică dacă e slot disponibil
+    if (type === 'available') {
+        card.className = 'card available-slot-card-mini';
+        card.innerHTML = `
+            <div class="available-time-mini">${sanitizeHtml(item)}</div>
+        `;
+        fragment.appendChild(card);
+        return fragment;
+    }
+    
+    // Logica existentă pentru rezervări
     card.className = 'card';
 
     const statusClass = type === 'pending' ? 'status-pending' : 'status-confirmed';
@@ -256,15 +268,15 @@ function createCard(booking, type = 'pending') {
     if (type === 'pending') {
         actionsHtml = `
             <div class="card-actions">
-                <button class="btn btn-confirm" data-id="${sanitizeHtml(booking.id)}">Acceptă</button>
-                <button class="btn btn-decline" data-id="${sanitizeHtml(booking.id)}">Refuză</button>
-                <button class="btn btn-block" data-id="${sanitizeHtml(booking.id)}">Blochează</button>
+                <button class="btn btn-confirm" data-id="${sanitizeHtml(item.id)}">Acceptă</button>
+                <button class="btn btn-decline" data-id="${sanitizeHtml(item.id)}">Refuză</button>
+                <button class="btn btn-block" data-id="${sanitizeHtml(item.id)}">Blochează</button>
             </div>
         `;
     } else {
         actionsHtml = `
             <div class="card-actions">
-                <button class="btn btn-decline" data-id="${sanitizeHtml(booking.id)}">Anulează</button>
+                <button class="btn btn-decline" data-id="${sanitizeHtml(item.id)}">Anulează</button>
             </div>
         `;
     }
@@ -272,45 +284,45 @@ function createCard(booking, type = 'pending') {
     // Construiește HTML-ul complet o singură dată
     card.innerHTML = `
         <div class="card-header">
-            <div class="card-title">${sanitizeHtml(booking.clientName)}</div>
+            <div class="card-title">${sanitizeHtml(item.clientName)}</div>
             <div class="card-status ${statusClass}">${statusText}</div>
         </div>
         
         <div class="card-body">
             <div class="card-field email">
                 <div class="card-field-label">Email</div>
-                <div class="card-field-value">${sanitizeHtml(booking.email)}</div>
+                <div class="card-field-value">${sanitizeHtml(item.email)}</div>
             </div>
             
             <div class="card-field phone">
                 <div class="card-field-label">Telefon</div>
-                <div class="card-field-value">${sanitizeHtml(booking.phoneNumber)}</div>
+                <div class="card-field-value">${sanitizeHtml(item.phoneNumber)}</div>
             </div>
             
             <div class="card-field service">
                 <div class="card-field-label">Serviciu</div>
-                <div class="card-field-value">${sanitizeHtml(booking.service)}</div>
+                <div class="card-field-value">${sanitizeHtml(item.service)}</div>
             </div>
             
             ${type === 'pending' ? `
                 <div class="card-field date">
                     <div class="card-field-label">Data</div>
-                    <div class="card-field-value">${sanitizeHtml(booking.date)}</div>
+                    <div class="card-field-value">${sanitizeHtml(item.date)}</div>
                 </div>
                 
                 <div class="card-field time">
                     <div class="card-field-label">Ora</div>
-                    <div class="card-field-value">${sanitizeHtml(booking.time)}</div>
+                    <div class="card-field-value">${sanitizeHtml(item.time)}</div>
                 </div>
             ` : `
                 <div class="card-field time">
                     <div class="card-field-label">Ora</div>
-                    <div class="card-field-value">${sanitizeHtml(booking.time)}</div>
+                    <div class="card-field-value">${sanitizeHtml(item.time)}</div>
                 </div>
                 
                 <div class="card-field price">
                     <div class="card-field-label">Preț</div>
-                    <div class="card-field-value">${sanitizeHtml(booking.servicePrice)} RON</div>
+                    <div class="card-field-value">${sanitizeHtml(item.servicePrice)} RON</div>
                 </div>
             `}
         </div>
@@ -454,7 +466,7 @@ async function loadPendingBookings() {
 };
 
 
-// OPTIMIZATĂ - Load confirmed reservations for a specific date
+// OPTIMIZATĂ - Load confirmed reservations for a specific date + available slots + MONTHLY TOTAL
 async function loadConfirmedBookings(date) {
     if (!date) {
         logger.warn('No date provided for loadConfirmedBookings');
@@ -475,6 +487,11 @@ async function loadConfirmedBookings(date) {
 
         const data = await response.json();
         
+        // 🔍 DEBUGGING - Vezi ce primește de la server
+        console.log('📊 DATA PRIMITĂ DE LA SERVER:', data);
+        console.log('💰 Monthly Total:', data.monthlyTotal);
+        console.log('📅 Month Name:', data.monthName);
+        
         if (!domCache.confirmedCards) {
             return;
         }
@@ -482,24 +499,83 @@ async function loadConfirmedBookings(date) {
         // OPTIMIZARE: Construiește toate card-urile ca DocumentFragment
         const fragment = document.createDocumentFragment();
 
+        // NOU: Creează o listă combinată de rezervări și ore disponibile
+        const allSlots = [];
+
+        // Adaugă rezervările confirmate
         if (data.bookings && data.bookings.length > 0) {
             data.bookings.forEach((booking, index) => {
                 try {
-                    const cardFragment = createCard(booking, 'confirmed');
-                    fragment.appendChild(cardFragment);
+                    allSlots.push({
+                        type: 'booking',
+                        time: booking.time,
+                        data: booking
+                    });
                 } catch (e) {
                     logger.error(`Error processing booking ${index}:`, e);
                 }
             });
+        }
 
-            // Add total card
+        // NOU: Adaugă orele disponibile
+        if (data.availableSlots && data.availableSlots.length > 0) {
+            data.availableSlots.forEach(slot => {
+                allSlots.push({
+                    type: 'available',
+                    time: slot,
+                    data: slot
+                });
+            });
+        }
+
+        // Sortează toate slot-urile după oră
+        allSlots.sort((a, b) => {
+            const timeA = a.time.split(':').map(num => parseInt(num));
+            const timeB = b.time.split(':').map(num => parseInt(num));
+            const minutesA = timeA[0] * 60 + timeA[1];
+            const minutesB = timeB[0] * 60 + timeB[1];
+            return minutesA - minutesB;
+        });
+
+        // Creează card-urile sortate
+        if (allSlots.length > 0) {
+            allSlots.forEach(slot => {
+                try {
+                    let cardFragment;
+                    if (slot.type === 'booking') {
+                        cardFragment = createCard(slot.data, 'confirmed');
+                    } else {
+                        cardFragment = createCard(slot.data, 'available');
+                    }
+                    fragment.appendChild(cardFragment);
+                } catch (e) {
+                    logger.error('Error creating card:', e);
+                }
+            });
+
+            // ✅ CARDUL DE TOTAL CU SUMA LUNARĂ (când sunt rezervări)
             try {
                 const totalCard = document.createElement('div');
                 totalCard.className = 'card total-card';
+                
+                // Suma zilnică
+                const dailyBookingsCount = data.bookings ? data.bookings.length : 0;
+                const dailyTotal = data.totalPrice || 0;
+                
+                // Suma lunară
+                const monthlyTotal = data.monthlyTotal || 0;
+                const monthName = data.monthName || 'Luna curentă';
+                
+                console.log('🏗️ Building total card with:', { dailyTotal, monthlyTotal, monthName });
+                
                 totalCard.innerHTML = `
                     <div class="card-field">
-                        <div class="card-field-label">Total Încasări</div>
-                        <div class="card-field-value">${data.totalPrice} RON</div>
+                        <div class="card-field-label">Total Încasări (${dailyBookingsCount} rezervări)</div>
+                        <div class="card-field-value">${dailyTotal} RON</div>
+                    </div>
+                    <div class="card-field" style="margin-top: 15px; border-top: 1px solid #333; padding-top: 15px;">
+                        <div class="card-field-label">Total ${monthName}</div>
+                        <div class="card-field-value" style="color: #64b5f6; font-size: 1.2rem; font-weight: bold;">${monthlyTotal} RON</div>
                     </div>
                 `;
                 fragment.appendChild(totalCard);
@@ -511,29 +587,58 @@ async function loadConfirmedBookings(date) {
             domCache.confirmedCards.innerHTML = '';
             domCache.confirmedCards.appendChild(fragment);
 
-            // Add event listeners for cancel buttons
+            // Add event listeners for cancel buttons (doar pentru rezervări confirmate)
             try {
                 addCancelButtonListeners();
             } catch (e) {
                 logger.error('Error adding cancel button listeners:', e);
             }
         } else {
-            // No confirmed reservations for this date
+            // ✅ CARDUL DE TOTAL CU SUMA LUNARĂ (când NU sunt rezervări)
             try {
                 const emptyCard = document.createElement('div');
                 emptyCard.className = 'card';
-                emptyCard.innerHTML = `
-                    <div class="empty-message">Nu există rezervări confirmate pentru această dată</div>
-                `;
+                
+                // Verifică dacă este duminică
+                const selectedDateObj = new Date(date);
+                const dayOfWeek = selectedDateObj.getDay();
+                
+                if (dayOfWeek === 0) {
+                    emptyCard.innerHTML = `
+                        <div class="empty-message">
+                            <h3 style="color: #ff9800; margin-bottom: 10px;">Duminică - Zi de Odihnă</h3>
+                            <p>Suntem închiși duminica.</p>
+                        </div>
+                    `;
+                } else {
+                    emptyCard.innerHTML = `
+                        <div class="empty-message">
+                            Nu există rezervări pentru această dată.
+                            <br><small>Toate orele sunt disponibile.</small>
+                        </div>
+                    `;
+                }
+                
                 fragment.appendChild(emptyCard);
 
-                // Add total card showing 0
+                // ✅ CARDUL DE TOTAL CU SUMA LUNARĂ (chiar dacă nu sunt rezervări zilnice)
                 const totalCard = document.createElement('div');
                 totalCard.className = 'card total-card';
+                
+                // Suma lunară (chiar dacă ziua e 0)
+                const monthlyTotal = data.monthlyTotal || 0;
+                const monthName = data.monthName || 'Luna curentă';
+                
+                console.log('🏗️ Building empty day total card with monthly:', { monthlyTotal, monthName });
+                
                 totalCard.innerHTML = `
                     <div class="card-field">
-                        <div class="card-field-label">Total Încasări</div>
+                        <div class="card-field-label">Total Încasări (0 rezervări)</div>
                         <div class="card-field-value">0 RON</div>
+                    </div>
+                    <div class="card-field" style="margin-top: 15px; border-top: 1px solid #333; padding-top: 15px;">
+                        <div class="card-field-label">Total ${monthName}</div>
+                        <div class="card-field-value" style="color: #64b5f6; font-size: 1.2rem; font-weight: bold;">${monthlyTotal} RON</div>
                     </div>
                 `;
                 fragment.appendChild(totalCard);

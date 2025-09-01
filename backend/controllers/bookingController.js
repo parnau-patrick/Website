@@ -256,7 +256,7 @@ const getAvailableTimeSlots = async (req, res) => {
     
     // Gestionează cazul când nu există slot-uri disponibile
     if (filteredSlots.length === 0) {
-      let message = 'Nu există intervale orare disponibile pentru data selectată.';
+      let message = 'Nu mai există intervale orare disponibile pentru data selectată.Te rugăm să selectezi o altă dată.';
       
       // Mesaj personalizat pentru astăzi
       if (isToday) {
@@ -829,7 +829,7 @@ const getPendingBookings = async (req, res) => {
 };
 
 /**
- * Admin: Get confirmed bookings for a specific date
+ * Admin: Get confirmed bookings for a specific date + available slots + monthly total
  * @param {Object} req - Request object
  * @param {Object} res - Response object
  */
@@ -837,11 +837,11 @@ const getConfirmedBookings = async (req, res) => {
   try {
     const { date } = req.query;
     
+    // ================= VALIDARE INPUT =================
     if (!date) {
       return errorResponse(res, 400, 'Data este obligatorie');
     }
     
-    // Validate date format
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) {
       return errorResponse(res, 400, 'Format dată invalid. Folosiți formatul YYYY-MM-DD.');
@@ -852,51 +852,167 @@ const getConfirmedBookings = async (req, res) => {
       return errorResponse(res, 400, 'Dată invalidă.');
     }
     
-    const nextDay = new Date(selectedDate);
-    nextDay.setDate(nextDay.getDate() + 1);
+    logger.info(`🔍 getConfirmedBookings called for date: ${date}`);
     
-    const confirmedBookings = await Booking.find({
-      status: 'confirmed',
-      date: {
-        $gte: selectedDate,
-        $lt: nextDay
+    // ================= CALCULEAZĂ INTERVALUL ZILEI =================
+    const startOfDay = new Date(selectedDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(selectedDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    // ================= REZERVĂRI PENTRU ZIUA SELECTATĂ =================
+    let dailyBookings = [];
+    let dailyTotal = 0;
+    
+    try {
+      const confirmedBookings = await Booking.find({
+        status: 'confirmed',
+        date: {
+          $gte: startOfDay,
+          $lte: endOfDay
+        }
+      }).populate('client').sort({ time: 1 });
+      
+      logger.info(`📋 Found ${confirmedBookings.length} confirmed bookings for ${date}`);
+      
+      // Procesează fiecare rezervare pentru ziua curentă
+      for (const booking of confirmedBookings) {
+        try {
+          const service = await Service.findById(booking.service);
+          if (service) {
+            dailyBookings.push({
+              id: booking._id,
+              clientId: booking.client ? booking.client._id : null,
+              clientName: booking.clientName,
+              phoneNumber: booking.phoneNumber,
+              email: booking.email,
+              service: service.name,
+              servicePrice: service.price,
+              serviceDuration: service.duration,
+              time: booking.time,
+              totalClientBookings: booking.client ? booking.client.totalBookings : 1,
+              completedBookings: booking.client ? booking.client.completedBookings : 0
+            });
+            dailyTotal += service.price;
+          }
+        } catch (serviceError) {
+          logger.error(` Error processing service for booking ${booking._id}:`, serviceError);
+        }
       }
-    }).populate('client').sort({ time: 1 }); // Sort by time
+      
+      logger.info(` Daily total calculated: ${dailyTotal} RON from ${dailyBookings.length} bookings`);
+      
+    } catch (error) {
+      logger.error(' Error fetching daily bookings:', error);
+      dailyBookings = [];
+      dailyTotal = 0;
+    }
     
-    // Get service details for each booking
-    const formattedBookings = [];
-    let totalPrice = 0;
+    // ================= GENEREAZĂ ORELE DISPONIBILE =================
+    let availableSlots = [];
     
-    for (const booking of confirmedBookings) {
-      const service = await Service.findById(booking.service);
-      if (service) {
-        formattedBookings.push({
-          id: booking._id,
-          clientId: booking.client ? booking.client._id : null,
-          clientName: booking.clientName,
-          phoneNumber: booking.phoneNumber,
-          email: booking.email, // Added email field
-          service: service.name,
-          servicePrice: service.price,
-          serviceDuration: service.duration,
-          time: booking.time,
-          totalClientBookings: booking.client ? booking.client.totalBookings : 1,
-          completedBookings: booking.client ? booking.client.completedBookings : 0
+    try {
+      availableSlots = await generateAvailableTimeSlots(selectedDate, 30);
+      logger.info(` Generated ${availableSlots.length} available slots for ${date}`);
+    } catch (error) {
+      logger.error(' Error generating available slots:', error);
+      availableSlots = [];
+    }
+    
+    // ================= CALCULEAZĂ SUMA LUNARĂ =================
+    let monthlyTotal = 0;
+    let monthlyBookingsCount = 0;
+    let monthName = '';
+    
+    try {
+      const currentYear = selectedDate.getFullYear();
+      const currentMonth = selectedDate.getMonth(); // 0-11
+      
+      // Prima zi a lunii
+      const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+      firstDayOfMonth.setHours(0, 0, 0, 0);
+      
+      // Prima zi a lunii următoare
+      const firstDayOfNextMonth = new Date(currentYear, currentMonth + 1, 1);
+      firstDayOfNextMonth.setHours(0, 0, 0, 0);
+      
+      logger.info(` Calculating monthly total from ${firstDayOfMonth.toISOString().split('T')[0]} to ${firstDayOfNextMonth.toISOString().split('T')[0]}`);
+      
+      // Găsește TOATE rezervările confirmate din luna curentă
+      const monthlyBookings = await Booking.find({
+        status: 'confirmed',
+        date: {
+          $gte: firstDayOfMonth,
+          $lt: firstDayOfNextMonth
+        }
+      });
+      
+      monthlyBookingsCount = monthlyBookings.length;
+      logger.info(` Found ${monthlyBookingsCount} confirmed bookings in current month`);
+      
+      // Calculează suma totală pentru întreaga lună
+      for (const booking of monthlyBookings) {
+        try {
+          const service = await Service.findById(booking.service);
+          if (service && typeof service.price === 'number') {
+            monthlyTotal += service.price;
+          }
+        } catch (serviceError) {
+          logger.error(` Error processing monthly service for booking ${booking._id}:`, serviceError);
+        }
+      }
+      
+      // Generează numele lunii în română
+      const romanianMonths = [
+        'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
+        'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'
+      ];
+      
+      monthName = `${romanianMonths[currentMonth]} ${currentYear}`;
+      
+      logger.info(` Monthly total calculated: ${monthlyTotal} RON from ${monthlyBookingsCount} bookings in ${monthName}`);
+      
+    } catch (error) {
+      logger.error(' Error calculating monthly total:', error);
+      monthlyTotal = 0;
+      monthlyBookingsCount = 0;
+      
+      // Fallback pentru numele lunii
+      try {
+        monthName = selectedDate.toLocaleDateString('ro-RO', { 
+          month: 'long', 
+          year: 'numeric' 
         });
-        totalPrice += service.price;
+      } catch (dateError) {
+        monthName = 'Luna curentă';
       }
     }
     
-    res.status(200).json({ 
-      success: true, 
-      bookings: formattedBookings,
-      totalPrice,
-      count: formattedBookings.length,
-      date: selectedDate.toLocaleDateString('ro-RO')
-    });
+    const responseData = {
+      success: true,
+      
+      // Date pentru ziua selectată
+      bookings: dailyBookings,
+      totalPrice: dailyTotal,
+      count: dailyBookings.length,
+      date: selectedDate.toLocaleDateString('ro-RO'),
+      
+      // Ore disponibile pentru ziua selectată
+      availableSlots: availableSlots,
+      availableSlotsCount: availableSlots.length,
+      
+      // Date pentru întreaga lună
+      monthlyTotal: monthlyTotal,
+      monthlyBookingsCount: monthlyBookingsCount,
+      monthName: monthName
+    };
+    
+    res.status(200).json(responseData);
+    
   } catch (error) {
-    logger.error('Error fetching confirmed bookings:', error);
-    return errorResponse(res, 500, 'Eroare la obținerea rezervărilor confirmate');
+    logger.error(' CRITICAL ERROR in getConfirmedBookings:', error);
+    return errorResponse(res, 500, 'Eroare critică la obținerea rezervărilor confirmate');
   }
 };
 
@@ -964,7 +1080,7 @@ const confirmBooking = async (req, res) => {
     // TRIMITE EMAIL ASINCRON în background
     setImmediate(async () => {
       try {
-        logger.info(`📧 Trimitem email de confirmare asincron pentru booking ${booking._id}...`);
+        logger.info(` Trimitem email de confirmare asincron pentru booking ${booking._id}...`);
         
         const emailResult = await sendBookingConfirmationEmail(booking.email, {
           _id: booking._id,
@@ -975,16 +1091,16 @@ const confirmBooking = async (req, res) => {
         });
         
         if (emailResult.success) {
-          logger.info(`✅ Email de confirmare trimis cu succes pentru ${booking.email}`);
+          logger.info(` Email de confirmare trimis cu succes pentru ${booking.email}`);
           if (booking.client) {
             await booking.client.incrementEmailCounter();
           }
         } else {
-          logger.error(`❌ Email de confirmare eșuat pentru ${booking.email}:`, emailResult.error);
+          logger.error(` Email de confirmare eșuat pentru ${booking.email}:`, emailResult.error);
         }
         
       } catch (asyncEmailError) {
-        logger.error(`💥 Eroare la email asincron de confirmare pentru booking ${booking._id}:`, asyncEmailError);
+        logger.error(` Eroare la email asincron de confirmare pentru booking ${booking._id}:`, asyncEmailError);
       }
     });
  } catch (error) {
@@ -1057,7 +1173,7 @@ const declineBooking = async (req, res) => {
     // TRIMITE EMAIL ASINCRON în background
     setImmediate(async () => {
       try {
-        logger.info(`📧 Trimitem email de respingere asincron pentru booking ${booking._id}...`);
+        logger.info(` Trimitem email de respingere asincron pentru booking ${booking._id}...`);
         
         const emailResult = await sendBookingRejectionEmail(booking.email, {
           _id: booking._id,
@@ -1068,16 +1184,16 @@ const declineBooking = async (req, res) => {
         });
         
         if (emailResult.success) {
-          logger.info(`✅ Email de respingere trimis cu succes pentru ${booking.email}`);
+          logger.info(` Email de respingere trimis cu succes pentru ${booking.email}`);
           if (booking.client) {
             await booking.client.incrementEmailCounter();
           }
         } else {
-          logger.error(`❌ Email de respingere eșuat pentru ${booking.email}:`, emailResult.error);
+          logger.error(` Email de respingere eșuat pentru ${booking.email}:`, emailResult.error);
         }
         
       } catch (asyncEmailError) {
-        logger.error(`💥 Eroare la email asincron de respingere pentru booking ${booking._id}:`, asyncEmailError);
+        logger.error(` Eroare la email asincron de respingere pentru booking ${booking._id}:`, asyncEmailError);
       }
     });
  } catch (error) {
@@ -1179,7 +1295,7 @@ const blockUser = async (req, res) => {
     // TRIMITE EMAIL ASINCRON în background
     setImmediate(async () => {
       try {
-        logger.info(`🚫 Trimitem email de blocare asincron pentru ${booking.email}...`);
+        logger.info(` Trimitem email de blocare asincron pentru ${booking.email}...`);
         
         const emailResult = await sendUserBlockedEmail(booking.email, {
           name: booking.clientName,
@@ -1188,17 +1304,17 @@ const blockUser = async (req, res) => {
         }, reason);
         
         if (emailResult.success) {
-          logger.info(`✅ Email de blocare trimis cu succes pentru ${booking.email}`);
+          logger.info(` Email de blocare trimis cu succes pentru ${booking.email}`);
           // Update client email counter
           if (booking.client) {
             await booking.client.incrementEmailCounter();
           }
         } else {
-          logger.error(`❌ Email de blocare eșuat pentru ${booking.email}:`, emailResult.error);
+          logger.error(` Email de blocare eșuat pentru ${booking.email}:`, emailResult.error);
         }
         
       } catch (asyncEmailError) {
-        logger.error(`💥 Eroare la email asincron de blocare pentru ${booking.email}:`, asyncEmailError);
+        logger.error(` Eroare la email asincron de blocare pentru ${booking.email}:`, asyncEmailError);
       }
     });
  } catch (error) {
