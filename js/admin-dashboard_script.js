@@ -242,7 +242,6 @@ function hideBlockPopup() {
     }
 }
 
-// FUNCȚIE OPTIMIZATĂ - Create card for booking sau available slot cu DocumentFragment
 function createCard(item, type = 'pending') {
     // Utilizează DocumentFragment pentru performanță optimă
     const fragment = document.createDocumentFragment();
@@ -487,19 +486,12 @@ async function loadConfirmedBookings(date) {
 
         const data = await response.json();
         
-        // 🔍 DEBUGGING - Vezi ce primește de la server
-        console.log('📊 DATA PRIMITĂ DE LA SERVER:', data);
-        console.log('💰 Monthly Total:', data.monthlyTotal);
-        console.log('📅 Month Name:', data.monthName);
         
         if (!domCache.confirmedCards) {
             return;
         }
 
-        // OPTIMIZARE: Construiește toate card-urile ca DocumentFragment
         const fragment = document.createDocumentFragment();
-
-        // NOU: Creează o listă combinată de rezervări și ore disponibile
         const allSlots = [];
 
         // Adaugă rezervările confirmate
@@ -553,7 +545,7 @@ async function loadConfirmedBookings(date) {
                 }
             });
 
-            // ✅ CARDUL DE TOTAL CU SUMA LUNARĂ (când sunt rezervări)
+            
             try {
                 const totalCard = document.createElement('div');
                 totalCard.className = 'card total-card';
@@ -566,7 +558,6 @@ async function loadConfirmedBookings(date) {
                 const monthlyTotal = data.monthlyTotal || 0;
                 const monthName = data.monthName || 'Luna curentă';
                 
-                console.log('🏗️ Building total card with:', { dailyTotal, monthlyTotal, monthName });
                 
                 totalCard.innerHTML = `
                     <div class="card-field">
@@ -594,7 +585,6 @@ async function loadConfirmedBookings(date) {
                 logger.error('Error adding cancel button listeners:', e);
             }
         } else {
-            // ✅ CARDUL DE TOTAL CU SUMA LUNARĂ (când NU sunt rezervări)
             try {
                 const emptyCard = document.createElement('div');
                 emptyCard.className = 'card';
@@ -621,7 +611,6 @@ async function loadConfirmedBookings(date) {
                 
                 fragment.appendChild(emptyCard);
 
-                // ✅ CARDUL DE TOTAL CU SUMA LUNARĂ (chiar dacă nu sunt rezervări zilnice)
                 const totalCard = document.createElement('div');
                 totalCard.className = 'card total-card';
                 
@@ -629,7 +618,6 @@ async function loadConfirmedBookings(date) {
                 const monthlyTotal = data.monthlyTotal || 0;
                 const monthName = data.monthName || 'Luna curentă';
                 
-                console.log('🏗️ Building empty day total card with monthly:', { monthlyTotal, monthName });
                 
                 totalCard.innerHTML = `
                     <div class="card-field">
