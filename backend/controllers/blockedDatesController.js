@@ -116,7 +116,7 @@ const checkExistingBookings = async (date, isFullDay, hours = []) => {
 };
 
 /**
- * Blochează o dată întreagă sau ore specifice
+ * Blochează o dată întreagă sau ore specifice - VERSIUNE CORECTATĂ
  */
 const blockDate = async (req, res) => {
   try {
@@ -161,7 +161,7 @@ const blockDate = async (req, res) => {
       }
     }
     
-    // VERIFICARE NOUĂ: Controlează dacă există rezervări pentru data/orele specificate
+    // MODIFICAT: Verifică rezervările doar pentru orele/ziua specifică
     const bookingCheck = await checkExistingBookings(selectedDate, isFullDay, hours || []);
     
     if (bookingCheck.hasConflict) {
@@ -195,15 +195,48 @@ const blockDate = async (req, res) => {
     });
     
     if (existingBlock) {
-      // Actualizează blocarea existentă
-      existingBlock.isFullDayBlocked = isFullDay;
-      existingBlock.blockedHours = isFullDay ? [] : [...new Set(hours)]; // Remove duplicates
-      existingBlock.reason = automaticReason;
-      existingBlock.createdBy = req.user.id;
+      
+      
+      // Dacă există blocare completă, nu permite modificări
+      if (existingBlock.isFullDayBlocked) {
+        return errorResponse(res, 400, `Data ${dayName} este deja blocată complet`);
+      }
+      
+      // Dacă vrei să blochezi toată ziua, dar există ore blocate parțial
+      if (isFullDay && !existingBlock.isFullDayBlocked) {
+        return errorResponse(res, 400, 
+          `Data ${dayName} are deja ore blocate (${existingBlock.blockedHours.join(', ')}). Pentru a bloca toată ziua, mai întâi deblochează orele existente.`
+        );
+      }
+      
+      // Pentru ore parțiale, combină orele existente cu cele noi
+      if (!isFullDay && !existingBlock.isFullDayBlocked) {
+        // Verifică suprapunerile
+        const existingHours = existingBlock.blockedHours || [];
+        const overlappingHours = hours.filter(hour => existingHours.includes(hour));
+        
+        if (overlappingHours.length > 0) {
+          return errorResponse(res, 400, 
+            `Următoarele ore sunt deja blocate: ${overlappingHours.join(', ')}`
+          );
+        }
+        
+        // Combină orele existente cu cele noi
+        const combinedHours = [...new Set([...existingHours, ...hours])];
+        existingBlock.blockedHours = combinedHours;
+        existingBlock.reason = `Anumite ore sunt indisponibile în ${dayName}`;
+        existingBlock.createdBy = req.user.id;
+        
+        logger.info(`Actualizare blocare parțială pentru ${dayName}: ${combinedHours.join(', ')}`);
+      } else {
+        // Pentru alte cazuri, actualizează direct
+        existingBlock.isFullDayBlocked = isFullDay;
+        existingBlock.blockedHours = isFullDay ? [] : [...new Set(hours)]; // Remove duplicates
+        existingBlock.reason = automaticReason;
+        existingBlock.createdBy = req.user.id;
+      }
+      
       await existingBlock.save();
-      const { invalidateCacheForDate } = require('../models/Booking');
-    invalidateCacheForDate(selectedDate);
-    logger.info(`🗑️ Cache invalidated after admin blocked hours - immediate update for clients`);
     } else {
       // Creează o nouă blocare
       existingBlock = new BlockedDate({
@@ -216,17 +249,26 @@ const blockDate = async (req, res) => {
       await existingBlock.save();
     }
     
+    // Invalidează cache-ul
+    const { invalidateCacheForDate } = require('../models/Booking');
+    invalidateCacheForDate(selectedDate);
+    logger.info(`🗑️ Cache invalidated after admin blocked hours - immediate update for clients`);
+    
+    // Răspuns cu informații detaliate
+    const responseMessage = existingBlock.isFullDayBlocked 
+      ? `Data ${dayName} a fost blocată complet`
+      : `${existingBlock.blockedHours.length} ore au fost blocate în ${dayName}`;
+    
     res.status(200).json({
       success: true,
-      message: isFullDay 
-        ? `Data ${dayName} a fost blocată complet` 
-        : `Orele selectate din ${dayName} au fost blocate`,
+      message: responseMessage,
       blockedDate: {
         id: existingBlock._id,
         date: existingBlock.date,
         isFullDayBlocked: existingBlock.isFullDayBlocked,
         blockedHours: existingBlock.blockedHours,
-        reason: existingBlock.reason
+        reason: existingBlock.reason,
+        totalBlockedHours: existingBlock.blockedHours.length
       }
     });
     

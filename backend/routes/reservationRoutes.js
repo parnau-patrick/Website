@@ -22,7 +22,7 @@ router.post(
 router.get(
   '/admin/blocked-dates',
   authenticateJWT,
-  authorizeRole(['admin', 'barber']),
+  authorizeRole(['admin']),
   blockedDatesController.getBlockedDates
 );
 
@@ -116,21 +116,21 @@ router.post(
 router.get(
   '/admin/bookings/pending',
   authenticateJWT,
-  authorizeRole(['admin', 'barber']),
+  authorizeRole(['admin']),
   bookingController.getPendingBookings
 );
 
 router.get(
   '/admin/bookings/confirmed',
   authenticateJWT,
-  authorizeRole(['admin', 'barber']),
+  authorizeRole(['admin']),
   bookingController.getConfirmedBookings
 );
 
 router.put(
   '/admin/bookings/:bookingId/confirm',
   authenticateJWT,
-  authorizeRole(['admin', 'barber']),
+  authorizeRole(['admin']),
   validationMiddleware.validateBookingId,
   bookingController.confirmBooking
 );
@@ -138,7 +138,7 @@ router.put(
 router.put(
   '/admin/bookings/:bookingId/decline',
   authenticateJWT,
-  authorizeRole(['admin', 'barber']),
+  authorizeRole(['admin']),
   validationMiddleware.validateBookingId,
   bookingController.declineBooking
 );
@@ -156,14 +156,14 @@ router.post(
 router.get(
   '/admin/clients',
   authenticateJWT,
-  authorizeRole(['admin', 'barber']),
+  authorizeRole(['admin']),
   bookingController.getAllClients
 );
 
 router.get(
   '/admin/clients/:clientId',
   authenticateJWT,
-  authorizeRole(['admin', 'barber']),
+  authorizeRole(['admin']),
   validationMiddleware.validateClientId,
   bookingController.getClientDetails
 );
@@ -185,7 +185,7 @@ router.put(
 router.put(
   '/admin/bookings/:bookingId/complete',
   authenticateJWT,
-  authorizeRole(['admin', 'barber']),
+  authorizeRole(['admin']),
   validationMiddleware.validateBookingId,
   bookingController.completeBookingService
 );

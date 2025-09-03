@@ -1222,20 +1222,21 @@ function checkIfDateAlreadyBlocked(selectedDate, isFullDay, selectedHours = []) 
     try {
         // Verifică în cache-ul local
         const existingBlock = blockedDatesCache.find(blocked => {
-            // FIXAT: Folosește data locală pentru comparare corectă
+           
             const blockedDateObj = new Date(blocked.date);
             
-            // Creează string-ul de dată local pentru comparare
+            
             const blockedDateString = `${blockedDateObj.getFullYear()}-${(blockedDateObj.getMonth() + 1).toString().padStart(2, '0')}-${blockedDateObj.getDate().toString().padStart(2, '0')}`;
             
             return blockedDateString === selectedDate;
         });
         
+        
         if (!existingBlock) {
             return { isBlocked: false };
         }
         
-        // Verifică tipul de blocare
+        
         if (existingBlock.isFullDayBlocked) {
             return {
                 isBlocked: true,
@@ -1243,16 +1244,16 @@ function checkIfDateAlreadyBlocked(selectedDate, isFullDay, selectedHours = []) 
             };
         }
         
-        // Dacă există blocare parțială și vrei să blochezi toată ziua
-        if (!existingBlock.isFullDayBlocked && isFullDay) {
+        
+        if (isFullDay && !existingBlock.isFullDayBlocked) {
             return {
                 isBlocked: true,
                 message: `Data ${existingBlock.dateFormatted} are deja ore blocate (${existingBlock.blockedHours.join(', ')}). Pentru a bloca toată ziua, mai întâi deblochează orele existente.`
             };
         }
         
-        // Verifică dacă orele selectate se suprapun cu cele existente
-        if (!isFullDay && existingBlock.blockedHours) {
+       
+        if (!isFullDay && existingBlock.blockedHours && Array.isArray(existingBlock.blockedHours)) {
             const overlappingHours = selectedHours.filter(hour => 
                 existingBlock.blockedHours.includes(hour)
             );
@@ -1263,7 +1264,11 @@ function checkIfDateAlreadyBlocked(selectedDate, isFullDay, selectedHours = []) 
                     message: `Următoarele ore sunt deja blocate în ${existingBlock.dateFormatted}: ${overlappingHours.join(', ')}`
                 };
             }
+            
+            
+            logger.info(` Nu există suprapuneri. Ore existente: [${existingBlock.blockedHours.join(', ')}], Ore noi: [${selectedHours.join(', ')}]`);
         }
+        
         
         return { isBlocked: false };
         

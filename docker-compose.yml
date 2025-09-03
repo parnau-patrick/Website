@@ -84,7 +84,6 @@ networks:
         - subnet: 172.20.0.0/16
 
 volumes:
-  # ELIMINAT: mongo_data și mongo_config (nu mai avem MongoDB local)
   backend_logs:
     driver: local
   nginx_logs:
