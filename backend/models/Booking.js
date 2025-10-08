@@ -17,7 +17,7 @@ const logger = createContextLogger('BOOKING-MODEL');
 const slotsCache = new Map();
 const servicesCache = new Map();
 const CACHE_DURATION = 1000; 
-const SERVICES_CACHE_DURATION = 300000; 
+const SERVICES_CACHE_DURATION = 0; 
 
 // Verifică dacă MONGO_URL este setat în producție
 if (NODE_ENV === 'production' && !process.env.MONGO_URL) {
@@ -607,7 +607,6 @@ const EmailUsage = mongoose.model('EmailUsage', emailUsageSchema);
 
 const initializeServices = async () => {
   try {
-    // Limităm inițializarea serviciilor doar în dezvoltare sau când se cere explicit
     if (NODE_ENV === 'production' && process.env.INIT_SERVICES !== 'true') {
       logger.info('Skipping service initialization in production');
       return;
@@ -616,7 +615,7 @@ const initializeServices = async () => {
     const count = await Service.countDocuments();
     if (count === 0) {
       await Service.create([
-        { _id: 1, name: 'Tuns', duration: 30, price: 80 },
+        { _id: 1, name: 'Tuns', duration: 30, price: 100 },
         { _id: 2, name: 'Tuns & Barba', duration: 30, price: 100 },
         { _id: 3, name: 'Precision Haircut', duration: 60, price: 150 }
       ]);
