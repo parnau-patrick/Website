@@ -408,7 +408,7 @@ const sendVerificationEmail = async (to, code, bookingId) => {
       
       // Pregătește opțiunile pentru email
       const mailOptions = {
-        from: `"${domain} Rezervări" <${EMAIL_FROM}>`,
+        from: `"DH_Programari" <${EMAIL_FROM}>`,
         to: to,
         subject: emailSubject,
         text: textContent,
@@ -611,7 +611,7 @@ const sendBookingConfirmationEmail = async (to, booking) => {
       
       // Pregătește opțiunile pentru email
       const mailOptions = {
-        from: `"${domain} Rezervări" <${EMAIL_FROM}>`,
+        from: `"DH_Programari" <${EMAIL_FROM}>`,
         to: to,
         subject: emailSubject,
         text: textContent,
@@ -801,7 +801,7 @@ const sendBookingRejectionEmail = async (to, booking) => {
      
      // Pregătește opțiunile pentru email
      const mailOptions = {
-       from: `"${domain} Rezervări" <${EMAIL_FROM}>`,
+       from: `"DH_Programari" <${EMAIL_FROM}>`,
        to: to,
        subject: emailSubject,
        text: textContent,
@@ -1050,7 +1050,7 @@ const sendUserBlockedEmail = async (to, clientData, reason) => {
      
      // Pregătește opțiunile pentru email
      const mailOptions = {
-       from: `"${domain} Rezervări" <${EMAIL_FROM}>`,
+       from: `"DH_Programari" <${EMAIL_FROM}>`,
        to: to,
        subject: emailSubject,
        text: textContent,
