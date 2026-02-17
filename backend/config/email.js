@@ -360,10 +360,17 @@ const sendVerificationEmail = async (to, code, bookingId) => {
     const domain = NODE_ENV === 'production' ? 'dariushreniuc.com' : 'Darius Hreniuc';
     
     // Personalizează mesajul email-ului de verificare
-    const emailSubject = `Codul tău de verificare pentru rezervarea la ${domain}`;
+    const emailSubject = `${code} - Codul tău de verificare pentru rezervarea la ${domain}`;
     
     // Conținut HTML pentru email
+    // Preheader-ul ascuns apare în preview-ul notificării pe telefon (primul text din body)
     const htmlContent = `
+      <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+        Codul tău de verificare este: ${code} — Introdu-l pe pagina de rezervare.
+      </div>
+      <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+        &nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;
+      </div>
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
         <h2 style="color: #ff1d46; text-align: center;">Verificare Rezervare</h2>
         <p>Salut!</p>
@@ -378,20 +385,19 @@ const sendVerificationEmail = async (to, code, bookingId) => {
     `;
     
     // Versiunea text pentru clienții de email care nu suportă HTML
-    const textContent = `
-      Verificare Rezervare
-      
-      Salut!
-      
-      Codul tău de verificare pentru programarea la ${domain} este: ${code}
-      
-      Te rugăm să introduci acest cod pe pagina de rezervare pentru a confirma programarea.
-      
-      Dacă nu ai solicitat acest cod, te rugăm să ignori acest email.
-      
-      Mulțumim,
-      Echipa ${domain}
-    `;
+    // Codul este pe primul rând pentru a apărea în preview-ul notificării
+    const textContent = `Codul tău de verificare: ${code}
+
+Salut!
+
+Codul tău de verificare pentru programarea la ${domain} este: ${code}
+
+Te rugăm să introduci acest cod pe pagina de rezervare pentru a confirma programarea.
+
+Dacă nu ai solicitat acest cod, te rugăm să ignori acest email.
+
+Mulțumim,
+Echipa ${domain}`;
     
     
     
@@ -537,8 +543,8 @@ const sendBookingConfirmationEmail = async (to, booking) => {
         <!-- Locația (același stil) -->
         <div style="background-color: #f0f8ff; padding: 15px; margin: 20px 0; border-radius: 5px; border-left: 4px solid #007bff;">
           <h3 style="color: #007bff; margin: 0 0 10px 0;">📍 Ne găsești aici:</h3>
-          <p style="margin: 5px 0;"><strong>Darius Hreniuc - Gold Style</strong></p>
-          <p style="margin: 5px 0;">📍 Bulevardul Regele Mihai I 31, Baia Mare, Maramureș</p>
+          <p style="margin: 5px 0;"><strong>Darius Hreniuc - Hair Balance</strong></p>
+          <p style="margin: 5px 0;">📍 Bulevardul Traian Nr.14, Baia Mare, Maramureș</p>
           <p style="margin: 5px 0;">📞 0748344298</p>
         </div>
         
@@ -581,8 +587,8 @@ const sendBookingConfirmationEmail = async (to, booking) => {
       Serviciu: ${serviceName}
       
       📍 LOCAȚIA:
-      Darius Hreniuc - Gold Style
-      Bulevardul Regele Mihai I 31, Baia Mare, Maramureș
+      Darius Hreniuc - Hair Balance
+      Bulevardul Traian Nr. 14, Baia Mare, Maramureș
       Telefon: 0748344298
       
       🌟 Te așteptăm la data și ora stabilită!
